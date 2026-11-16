@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="sq"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Format e Drinit të Bardhë</title>
+<title>Si formohet rrjedha e Drinit të Bardhë?</title>
 <style>
 :root{color-scheme:dark;font:16px "Segoe UI",sans-serif;background:#0c192d;color:#edf6ff}
 *{box-sizing:border-box}body{margin:0}main{max-width:1430px;margin:auto;padding:26px clamp(18px,4vw,60px)}
@@ -15,12 +15,12 @@ input[type=range]{width:100%;margin:10px 0}li{color:#a7c6e4}small{color:#a7c6e4}
 .hit{cursor:pointer}.visible{pointer-events:none}a{color:#acd6ff}output{color:#e9f6ff}
 @media(max-width:760px){.layout{display:flex;flex-direction:column}.figure{height:60vh;min-height:320px}aside{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}}
 </style></head><body><main>
-<header><h1>FORMAT E DRINIT TË BARDHË</h1><p id="count" aria-live="polite"></p></header>
+<header><h1>Si formohet rrjedha e Drinit të Bardhë?</h1><p>Eksploro format e degëve, shih ku bashkohen dhe krahaso prurjet e tyre deri në Kukës.</p><p id="count" aria-live="polite"></p></header>
 <div class="layout"><section class="figure" aria-label="Vizualizimi i degëve"><svg id="plot" viewBox="285 65 830 1090" role="group" aria-label="Trajektoret e Drinit të Bardhë"></svg><div id="tip" hidden></div></section>
 <aside>
-<fieldset><legend>Pamja</legend><button id="shape" aria-pressed="true">Forma</button> <button id="map" aria-pressed="false">Rrjeti lumor</button><p id="description"></p></fieldset>
-<fieldset><legend>Prurja minimale</legend><label for="flow">Prurja mesatare në fund <output id="value">0</output> m³/s</label><input id="flow" type="range" min="0" max="79" step="0.1" value="0"></fieldset>
-<fieldset><legend>Paraqitja</legend><label><input id="weighted" type="checkbox" checked> Trashësia sipas sipërfaqes ujëmbledhëse</label><p>Kalo mbi një vijë për të parë të dhënat. Kliko për ta fiksuar.</p><button id="reset">Rivendos</button></fieldset>
+<fieldset><legend>Çfarë dëshiron të krahasosh?</legend><button id="shape" aria-pressed="true">Format e degëve</button> <button id="map" aria-pressed="false">Bashkimet e degëve</button><p id="description"></p></fieldset>
+<fieldset><legend>Filtro degët sipas prurjes</legend><label for="flow">Shfaq degët me të paktën <output id="value">0</output> m³/s</label><input id="flow" type="range" min="0" max="79" step="0.1" value="0"><small>Filtri përdor prurjen mesatare të vlerësuar në fund të secilës trajektore.</small></fieldset>
+<fieldset><legend>Çfarë tregon trashësia?</legend><label><input id="weighted" type="checkbox" checked> Përdor trashësinë për të treguar sipërfaqen ujëmbledhëse</label><p>Vijat më të trasha tregojnë degë që mbledhin ujë nga një zonë më e madhe. Kalo mbi një vijë për të parë emrin dhe të dhënat. Kliko për ta mbajtur të përzgjedhur.</p><button id="reset">Rivendos pamjen dhe filtrat</button></fieldset>
 <p id="selection" aria-live="polite"></p>
 <small>HydroRIVERS v1.0 · 358 segmente<br>Frymëzuar nga <a href="https://dominicroye.github.io/shapes-of-rivers/">The Shapes of Rivers</a></small>
 </aside></div></main>
@@ -30,7 +30,7 @@ const $=id=>document.getElementById(id), plot=$('plot'), tip=$('tip');
 const fmt=(n,d=1)=>n.toLocaleString('sq-AL',{maximumFractionDigits:d});
 let mode='shape', pinned=null, hover=null;
 function details(b,i){
-  return (b.name || 'Degë pa emër të verifikuar · '+(i+1))+'\n'+fmt(b.length)+' km · '+fmt(b.q,3)+' m³/s\n'+fmt(b.area)+' km² sipërfaqe ujëmbledhëse';
+  return (b.name || 'Degë pa emër të verifikuar · '+(i+1))+'\n'+'Gjatësia: '+fmt(b.length)+' km · Prurja mesatare: '+fmt(b.q,3)+' m³/s\n'+fmt(b.area)+' km² sipërfaqe ujëmbledhëse';
 }
 function showTip(event,b,i){
   const box=plot.getBoundingClientRect();
@@ -58,7 +58,7 @@ function draw(){
   $('count').textContent=items.length+' nga '+branches.length+' trajektore';
   $('shape').setAttribute('aria-pressed',mode==='shape');
   $('map').setAttribute('aria-pressed',mode==='map');
-  $('description').textContent=mode==='shape'?'Nisje e përbashkët dhe gjatësi e njëjtë për krahasimin e formave.':'Degët shfaqen në pozicionet e tyre dhe ruajnë bashkimet.';
+  $('description').textContent=mode==='shape'?'Degët nisen nga e njëjta pikë dhe shfaqen me gjatësi të barabartë. Krahason kthesat edhe kur gjatësitë reale ndryshojnë.':'Shih ku bashkohen degët dhe ndiq rrjedhën kryesore deri në Kukës.';
   plot.setAttribute('viewBox',mode==='shape'?'285 65 830 1090':'280 165 850 975');
   plot.replaceChildren();
   const make=(tag,attrs)=>{
@@ -94,5 +94,7 @@ $('reset').onclick=()=>{mode='shape';pinned=null;$('flow').value=0;$('weighted')
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){pinned=null;hover=null;tip.hidden=true;update()}});
 draw();
 </script></body></html>
+
+
 
 
