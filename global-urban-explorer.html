@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="sq">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Atlasi global i zgjerimit urban</title>
+  <meta name="description" content="Eksploro zgjerimin urban të qyteteve sipas kontinentit dhe shtetit, nga viti 1985 deri në janar 2026.">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="global.css?v=20261119-poster">
+</head>
+<body>
+  <header>
+    <a class="brand" href="./"><span class="brand-mark">U</span> ATLASI URBAN <span class="region">/ GLOBAL</span></a>
+    <div class="header-tools"><select id="language" aria-label="Gjuha"><option value="en">English</option><option value="sq" selected>Shqip</option></select><span class="data-label" id="catalogueSize">GEONAMES · DLR</span></div>
+  </header>
+  <main>
+    <aside>
+      <h1>Qytetet ndryshojnë<span>.</span></h1>
+      <p class="intro">Eksploro zgjerimin e tyre, nga kontinenti te lagjja.</p>
+      <div class="filters">
+        <div><label for="continent">Kontinenti</label><select id="continent"><option value="">Të gjitha</option><option value="EU">Evropa</option><option value="AS">Azia</option><option value="AF">Afrika</option><option value="NA">Amerika e Veriut</option><option value="SA">Amerika e Jugut</option><option value="OC">Oqeania</option><option value="AN">Antarktida</option></select></div>
+        <div><label for="country">Shteti / territori</label><select id="country"></select></div>
+      </div>
+      <label for="search">Qyteti ose vendbanimi</label>
+      <div class="search-wrap"><input id="search" type="search" placeholder="Shkruaj emrin…" autocomplete="off" role="combobox" aria-controls="results" aria-expanded="false" aria-autocomplete="list"><div id="results" role="listbox" hidden></div></div>
+      <div class="presets"><button data-country="XK" data-city="Pristina">Prishtina</button><button data-country="PE" data-city="Lima">Lima</button><button data-country="BR" data-city="São Paulo">São Paulo</button></div>
+      <label for="period">Periudha satelitore</label>
+      <select id="period"><option value="evolution">1985–2015 · WSF Evolution</option><option value="tracker">2016–2026 · WSF Tracker</option></select>
+      <label for="areaUnit">Njësia e sipërfaqes</label><select id="areaUnit"><option value="auto">Automatike · nën 1 km² në hektarë</option><option value="ha">Gjithmonë hektarë (ha)</option></select>
+      <p class="panel-note area-unit-note">1 km² = 100 ha</p>
+      <div class="extent-label"><label for="extent">Gjerësia e pamjes</label><output id="extentValue">20 × 20 km</output></div>
+      <input id="extent" type="range" min="2" max="200" step="1" value="20">
+      <label class="basemap-toggle"><input id="basemapToggle" type="checkbox" checked> Harta në sfond</label>
+      <div class="basemap-options">
+        <label for="basemapProvider">Harta bazë</label><select id="basemapProvider"><option value="osm">OpenStreetMap</option><option value="esri">Esri World Imagery</option></select>
+        <label for="basemapColor">Paraqitja e sfondit</label><select id="basemapColor"><option value="mono">Pankromatike</option><option value="rgb">RGB · Me ngjyra</option></select>
+        <label for="basemapOpacity">Transparenca <output id="basemapOpacityValue">80%</output></label><input id="basemapOpacity" type="range" min="0" max="100" value="80" step="1">
+        <p class="panel-note">Sfondi është pamje orientuese; vitet i përkasin shtresës WSF.</p>
+      </div>
+      <details class="coordinate-picker"><summary>Zgjidh me koordinata</summary><form id="pointForm"><label for="latitude">Gjerësia gjeografike</label><input id="latitude" type="number" min="-90" max="90" step="any" placeholder="P.sh. −12.0464" required><label for="longitude">Gjatësia gjeografike</label><input id="longitude" type="number" min="-180" max="180" step="any" placeholder="P.sh. −77.0428" required><button class="point-button" type="submit">Shfaq pikën</button></form></details>
+      <section class="location"><span id="locationName">Prishtina</span><span id="coordinates"></span></section>
+      <dl class="stats"><div><dt>Zonë e ndërtuar në pamje</dt><dd id="total">—</dd></div><div><dt>Shtesa nga kuadri i mëparshëm</dt><dd id="growth">—</dd></div></dl>
+      <div class="methods"><button id="aboutToggle" aria-expanded="false">Burimet dhe interpretimi <span>+</span></button><div id="about" hidden>
+        <p>GeoNames cities500 përfshin qytete me mbi 500 banorë dhe qendra administrative. Për pikat që mungojnë përdor koordinatat ose hartën e vogël.</p>
+        <p>WSF Evolution ka rezolucion burimor rreth 30 m; WSF Tracker rreth 10 m. Të dhënat merren drejtpërdrejt nga shërbimi publik WMS i DLR, për zonën e zgjedhur.</p>
+        <p>Ngjyra tregon vitin kur zona e ndërtuar u identifikua. Baza e Tracker është korriku 2016. Kuadrot e mëvonshme tregojnë janarin. Dy produktet përdorin metoda të ndryshme.</p>
+        <p>Sipërfaqet janë vlerësime nga pikselët e paraqitur dhe varen nga zmadhimi. Për analiza statistikore duhen rasterët burimorë. Mbulimi gjeografik i shërbimit është nga 60° J deri në 78° V.</p>
+        <p>Hartat tregojnë shtrirjen e ndërtuar. Vlerësimi i informalitetit ose i infrastrukturës kërkon shtresa shtesë.</p>
+      </div></div>
+      <div class="methods citation-section"><button id="citationToggle" aria-expanded="false">Si ta citoni <span>+</span></button><div id="citationBody" hidden><p id="citationText"></p><button id="copyCitation" class="panel-button">Kopjo citimin</button><p id="copyStatus" role="status" class="panel-note"></p></div></div>
+      <p class="author-credit">Koncepti, analiza dhe zhvillimi: <strong>Rizah Murseli</strong> · 2026</p>
+      <p id="languageStatus" role="status" class="panel-note"></p>
+    </aside>
+    <section class="workspace" aria-label="Harta interaktive">
+      <div class="map-wrap">
+        <canvas id="basemap" aria-hidden="true"></canvas>
+        <canvas id="map" aria-label="Tërhiq hartën për të lëvizur. Kliko dy herë për qendrim."></canvas>
+        <div class="map-title"><span id="mapName">PRISHTINA</span><small id="mapPeriod"></small></div>
+        <div class="map-filters">
+          <div class="mode-switch" aria-label="Mënyra e paraqitjes">
+            <button data-mode="cumulative" class="active" aria-pressed="true">Gjendja</button>
+            <button data-mode="annual" aria-pressed="false">Shtesat e vitit</button>
+            <button data-mode="compare" aria-pressed="false">Krahaso</button>
+          </div>
+          <div class="map-chips">
+            <label><input id="radialToggle" type="checkbox" checked> Diagrami radial</label>
+            <label><input id="boundariesToggle" type="checkbox"> Kufijtë</label>
+          </div>
+        </div>
+        <div id="radialNote"><strong>Diagrami radial</strong><span id="radiusNote"></span><span>Çdo shtyllë tregon shtesën e një viti, sipas drejtimit.</span><small>Afër qendrës · Në mes · Në skaj</small></div>
+        <div class="year-label"><strong id="year">1985</strong><span id="epoch"></span></div>
+        <div id="status" role="status" aria-live="polite">Duke ngarkuar katalogun…</div>
+        <div class="map-tools"><button id="zoomIn" aria-label="Zmadho hartën">+</button><button id="zoomOut" aria-label="Zvogëlo hartën">−</button><button id="reset" aria-label="Rikthe pamjen e qytetit">⌖</button></div>
+        <canvas id="overview" width="180" height="100" aria-label="Harta e botës. Kliko për të zgjedhur një pikë."></canvas>
+        <div id="scale"><span></span><small></small></div>
+        <span class="map-help">Tërhiq · Zmadho me rrotën · Kliko dy herë për qendrim</span>
+        <span id="basemapStatus" role="status" aria-live="polite"></span>
+        <div id="pixelInfo" hidden></div>
+        <span class="osm-credit"><a id="basemapCredit" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap contributors</a></span>
+      </div>
+      <div class="playback">
+        <div class="play-row"><button id="play" disabled aria-label="Luaj animacionin">▶ <span>Luaj</span></button><input id="time" type="range" min="0" max="30" value="0" aria-label="Viti"><select id="speed" aria-label="Shpejtësia"><option value="800">0,5×</option><option value="400" selected>1×</option><option value="200">2×</option></select></div>
+        <div id="legend" aria-label="Ngjyrat e viteve"></div>
+        <p class="timeline-hint" id="hint">Çdo ngjyrë i përket një viti. Grija tregon gjendjen fillestare.</p>
+        <div class="export-controls"><span>Eksporto pamjen</span><select id="exportResolution" aria-label="Rezolucioni i eksportit"><option value="1">FHD · 1920 × 1080</option><option value="2">4K · 3840 × 2160</option></select><button id="exportPng" disabled>PNG</button><button id="exportSvg" disabled>SVG</button><span id="exportStatus" role="status"></span></div>
+        <div class="update-controls"><span id="dataFreshness">Duke kontrolluar burimin…</span><button id="checkUpdates" disabled>Kontrollo përditësimet</button></div>
+      </div>
+      <section class="urban-insights" aria-label="Statistikat e zgjerimit urban">
+        <div class="insights-heading"><h2>Çfarë tregon kjo pamje?</h2><span>Ndryshon me vitin e zgjedhur</span></div>
+        <div id="localInsights" class="insight-grid"></div>
+        <div class="insights-block"><h3>Kur u identifikua zgjerimi?</h3><p class="panel-note">Shtesat sipas dekadave, pa gjendjen fillestare.</p><div id="decadeInsights"></div></div>
+        <div class="insights-block">
+          <div class="insights-heading"><h3>Krahasimi me kryeqytetin</h3><select id="capitalPeer" aria-label="Qyteti për krahasim"><option value="view">Pamja e zgjedhur</option></select></div>
+          <p class="panel-note">E njëjta rreze 5 km rreth të dy qendrave. Krahasimi nuk përdor kufijtë administrativë ose filtrin e hartës.</p>
+          <p id="capitalStatus" class="panel-note" role="status"></p><button id="retryCapital" hidden>Provo sërish</button>
+          <div id="capitalTable"></div><p id="capitalChartUnit" class="panel-note">Ecuria e sipërfaqes së ndërtuar (km²)</p><svg id="capitalChart" role="img" aria-label="Krahasimi i zgjerimit urban në kohë"></svg><div id="capitalChartLegend" class="capital-chart-legend"></div>
+        </div>
+        <p class="panel-note">Vlerësime nga WSF. Ngjyra tregon kohën e identifikimit të zonës së ndërtuar.</p>
+      </section>
+    </section>
+    <aside id="analysisPanel" aria-label="Analizat dhe filtrat">
+      <nav class="analysis-tabs" aria-label="Pamjet e analizës">
+        <button data-tab="local" class="active" aria-pressed="true">Kjo zonë</button>
+        <button data-tab="units" aria-pressed="false">Njësitë</button>
+        <button data-tab="race" aria-pressed="false">Gara 5 km</button>
+        <button data-tab="country" aria-pressed="false">Shteti</button>
+      </nav>
+      <section data-analysis="local">
+        <h2>Si po zgjerohet kjo zonë?</h2>
+        <p class="panel-note">Drejtimet përmbledhin shtesat e identifikuara brenda rrethit.</p>
+        <div class="direction-cards" id="directions"></div>
+        <label for="compareFrom">Krahaso nga viti</label><select id="compareFrom"></select>
+        <label for="compareTo">Deri në vitin</label><select id="compareTo"></select>
+        <div class="summary-stat"><span>Shtesa gjatë intervalit</span><strong id="intervalGrowth">—</strong></div>
+        <div class="summary-stat"><span>Pjesa e ndërtuar e zonës së analizës</span><strong id="localShare">—</strong></div>
+        <h3>Shtesat vjetore</h3><svg id="yearChart" viewBox="0 0 300 110" role="img" aria-label="Grafiku i sipërfaqes së shtuar çdo vit"></svg>
+      </section>
+      <section data-analysis="units" hidden>
+        <label for="adminLevel">Niveli administrativ</label><select id="adminLevel"><option value="ADM1">Rajonet · ADM1</option><option value="ADM2">Njësitë vendore · ADM2</option></select>
+        <button id="loadUnits" class="panel-button">Ngarko njësitë e shtetit</button>
+        <p id="unitsStatus" class="panel-note" role="status"></p>
+        <label for="unitSelect">Filtro njësinë</label><select id="unitSelect" disabled><option value="">Të gjitha njësitë</option></select>
+        <label for="unitMetric">Treguesi</label><select id="unitMetric"><option value="share">Pjesa e territorit të ndërtuar (%)</option><option value="area">Zonë e ndërtuar</option><option value="growth">Shtesa gjatë intervalit</option></select>
+        <canvas id="unitsMap" width="600" height="620" aria-label="Harta tematike e njësive administrative"></canvas>
+        <div id="unitLegend" class="panel-note"></div>
+        <div id="unitDetails" class="panel-note"></div>
+        <details class="coordinate-picker"><summary>Zona kadastrale nga skedari</summary><label for="cadastreFile">Ngarko poligone GeoJSON në WGS84</label><input id="cadastreFile" type="file" accept=".json,.geojson,application/geo+json"><p class="panel-note">Zonat kadastrale filtrohen kur ngarkon shtresën përkatëse. Skedari përpunohet në shfletues.</p></details>
+        <p id="boundarySource" class="panel-note"></p>
+      </section>
+      <section data-analysis="race" hidden>
+        <h2>Krahasim me rreze 5 km</h2><p class="panel-note">Zgjidh deri në 8 qytete. Secili analizohet në të njëjtën sipërfaqe rreth qendrës.</p>
+        <label for="raceCities">Qytetet e shtetit të zgjedhur</label><select id="raceCities" multiple size="7"></select>
+        <button id="runRace" class="panel-button">Llogarit krahasimin</button>
+        <p id="raceStatus" class="panel-note" role="status"></p>
+        <div id="raceResults"></div>
+      </section>
+      <section data-analysis="country" hidden>
+        <h2>Përmbledhja e shtetit</h2><p class="panel-note">Analizë orientuese sipas njësive administrative. Kampionimi përshtatet me shtrirjen e shtetit.</p>
+        <button id="countryAnalysis" class="panel-button">Llogarit nga njësitë administrative</button>
+        <div id="countrySummary"></div>
+        <p class="panel-note">Përqindjet mbështeten në sipërfaqen e secilës njësi. Shtresat dhe treguesit kanë pasaktësitë e burimit dhe të kampionimit.</p>
+      </section>
+    </aside>
+  </main>
+  <footer><span><a href="https://geoservice.dlr.de/web/datasets/wsf" target="_blank" rel="noopener">DLR · World Settlement Footprint</a> · CC BY 4.0</span><span><a href="https://www.geonames.org/" target="_blank" rel="noopener">GeoNames</a> · <a href="https://www.naturalearthdata.com/" target="_blank" rel="noopener">Natural Earth</a> · <a href="https://www.geoboundaries.org/" target="_blank" rel="noopener">geoBoundaries</a></span></footer>
+  <script type="module" src="app.js?v=20261120-zone"></script>
+</body>
+</html>
