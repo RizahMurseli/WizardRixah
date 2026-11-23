@@ -1,0 +1,368 @@
+<title>KosovaRef01 vs UTM 34N</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one narrow scientific plate — header, twin maps, readout + curve, notes. Dark-first like a chart plate. */
+:root{
+  --bg:#0c1a24; --panel:#112430; --fg:#e4ecef; --muted:#8aa1ad; --line:#24404f;
+  --kr:#e8b84a; --utm:#52b6dc; --a:#ff7657; --cmp:#8f7dff; --land:#16303e;
+  --display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+  color-scheme:dark;
+}
+@media (prefers-color-scheme: light){:root:not([data-theme="dark"]){
+  --bg:#eef3f5; --panel:#ffffff; --fg:#10232d; --muted:#566c77; --line:#d0dce1;
+  --kr:#a77700; --utm:#1b7ea6; --a:#d6482a; --cmp:#5a48e0; --land:#e6eef1; color-scheme:light}}
+:root[data-theme="light"]{
+  --bg:#eef3f5; --panel:#ffffff; --fg:#10232d; --muted:#566c77; --line:#d0dce1;
+  --kr:#a77700; --utm:#1b7ea6; --a:#d6482a; --cmp:#5a48e0; --land:#e6eef1; color-scheme:light}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.55}
+.wrap{max-width:1120px;margin:0 auto;padding-block:28px 48px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  display:grid;gap:28px}
+.eyebrow,.lbl{font-family:var(--body);font-size:11.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(34px,6vw,58px);line-height:1;margin:6px 0 10px;letter-spacing:.005em;text-wrap:balance}
+h1 .vs{color:var(--muted);font-weight:500}
+h1 .k{color:var(--kr)} h1 .u{color:var(--utm)}
+.lede{max-width:68ch;color:var(--muted);margin:0}
+.lede b{color:var(--fg);font-weight:500}
+hr{border:0;border-top:1px solid var(--line);margin:0}
+.maps{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.map{min-width:0;display:grid;gap:8px}
+.map h2{font-family:var(--display);font-weight:600;font-size:22px;margin:0;line-height:1.1}
+.map h2 small{display:block;font-family:var(--mono);font-size:11.5px;font-weight:400;color:var(--muted);margin-top:3px}
+.map.kr h2{color:var(--kr)} .map.utm h2{color:var(--utm)}
+.map svg{width:100%;height:auto;display:block;touch-action:none;cursor:crosshair}
+.bar{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center}
+button{font:500 13px var(--body);color:var(--fg);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:7px 14px;cursor:pointer}
+button:hover{border-color:var(--muted)}
+button:focus-visible{outline:2px solid var(--a);outline-offset:2px}
+.route{font-family:var(--mono);font-size:13px;color:var(--a)}
+.hint{font-size:13px;color:var(--muted)}
+.legend{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);font-family:var(--mono)}
+.ramp{width:120px;height:10px;border-radius:2px;background:linear-gradient(90deg,transparent,var(--cmp));border:1px solid var(--line)}
+.lower{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:28px;align-items:start}
+table{border-collapse:collapse;width:100%;font-family:var(--mono);font-size:13px;font-variant-numeric:tabular-nums}
+th,td{padding:5px 8px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+th:first-child,td:first-child{text-align:left;color:var(--muted);font-family:var(--body)}
+thead th{font-family:var(--body);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;font-weight:600}
+thead th.kr{color:var(--kr)} thead th.utm{color:var(--utm)}
+.ptA{color:var(--a);font-weight:600}
+.tbl{overflow-x:auto}
+.chart svg{width:100%;height:auto;display:block}
+.notes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px}
+.notes h3{font-family:var(--display);font-weight:600;font-size:21px;margin:0 0 6px;line-height:1.15}
+.notes p{margin:0 0 8px;color:var(--muted)}
+.notes p b{color:var(--fg);font-weight:500}
+.eq{font-family:var(--mono);font-size:12.5px;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:10px 12px;color:var(--fg);overflow-x:auto;white-space:nowrap;margin:8px 0}
+.params td{white-space:normal}
+.eq.wrap{white-space:normal}
+.params td:nth-child(2){color:var(--kr)} .params td:nth-child(3){color:var(--utm)}
+footer{font-size:12.5px;color:var(--muted)}
+footer a{color:var(--muted)}
+@media (max-width:820px){.lower,.notes{grid-template-columns:1fr}}
+@media (max-width:560px){.maps{grid-template-columns:1fr}}
+svg text{font-family:var(--mono)}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Konform · Cilindrik · Transversal · Elipsoidi GRS80</div>
+    <h1><span class="k">KosovaRef01</span> <span class="vs">kundër</span> <span class="u">UTM 34N</span></h1>
+    <p class="lede">Të dyja ndërtohen mbi projeksionin Transversal të Merkatorit, me <b>të njëjtin meridian qendror, λ₀ = 21°E</b>. Ndryshon vetëm faktori i shkallës në meridian, <b>k₀ = 0.9999</b> te KosovaRef01 dhe <b>k₀ = 0.9996</b> te UTM. Ky ndryshim i vogël vendos sa shkurtohen distancat në hartë kudo në Kosovë.</p>
+  </header>
+  <hr>
+
+  <section>
+    <div class="maps">
+      <div class="map kr"><h2>KosovaRef01 / Balkans zone 7<small>EPSG:9141 · k₀ 0.9999 · FE 7 500 000 m</small></h2><svg id="mapKR" role="img" aria-label="Harta e Kosovës në KosovaRef01 me gabimin e shkallës"></svg></div>
+      <div class="map utm"><h2>WGS 84 / UTM zone 34N<small>EPSG:32634 · k₀ 0.9996 · FE 500 000 m</small></h2><svg id="mapUTM" role="img" aria-label="Harta e Kosovës në UTM 34N me gabimin e shkallës"></svg></div>
+    </div>
+    <div class="bar" style="margin-top:12px">
+      <button id="play" type="button">Ndalo</button>
+      <span class="route" id="route">Prishtinë → Ferizaj</span>
+      <span class="hint">Kliko ose tërhiq mbi hartë për ta vendosur pikën A.</span>
+    </div>
+    <div class="bar" style="margin-top:10px">
+      <span class="legend">0 ppm <span class="ramp"></span> −400 ppm</span>
+      <span class="hint">Rrathët janë të njëjtë në terren; ndryshimi i madhësisë është zmadhuar ×1000. Rrethi me ndërprerje është madhësia e vërtetë. Vijat vertikale kanë k të njëjtë.</span>
+    </div>
+  </section>
+  <hr>
+
+  <section class="lower">
+    <div class="tbl">
+      <div class="lbl ptA" style="margin-bottom:8px">Në pikën A</div>
+      <table id="tblA">
+        <thead><tr><th></th><th class="kr">KosovaRef01</th><th class="utm">UTM 34N</th><th>Dallimi</th></tr></thead>
+        <tbody>
+          <tr><td>λ, φ</td><td colspan="3" id="ll" style="text-align:left"></td></tr>
+          <tr><td>E</td><td id="eK"></td><td id="eU"></td><td id="eD"></td></tr>
+          <tr><td>N</td><td id="nK"></td><td id="nU"></td><td id="nD"></td></tr>
+          <tr><td>x nga λ₀</td><td colspan="3" id="dx" style="text-align:left"></td></tr>
+          <tr><td>k</td><td id="kK"></td><td id="kU"></td><td id="kD"></td></tr>
+          <tr><td>Gabimi</td><td id="pK"></td><td id="pU"></td><td></td></tr>
+          <tr><td>1 km në terren</td><td id="mK"></td><td id="mU"></td><td></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="chart">
+      <div class="lbl" style="margin-bottom:8px">Faktori i shkallës k sipas largësisë nga meridiani qendror · φ = 42.5°</div>
+      <svg id="chart" viewBox="0 0 620 330" role="img" aria-label="Kurbat e faktorit të shkallës për të dy sistemet"></svg>
+    </div>
+  </section>
+  <hr>
+
+  <section class="notes">
+    <div>
+      <h3>Pse k₀ është më i vogël se 1</h3>
+      <p>Me k₀ &lt; 1 cilindri hyn pak brenda elipsoidit dhe e pret atë në dy vija ku <b>k = 1</b>. Mes tyre harta i shkurton distancat, jashtë tyre i zgjat.</p>
+      <p>Te KosovaRef01 këto vija janë rreth <b id="xKR">±90 km</b> nga 21°E, pak jashtë Kosovës (−82 km deri +65 km). Te UTM janë rreth <b id="xU">±180 km</b>, sepse zona 6° duhet të mbulojë deri në ±250 km.</p>
+    </div>
+    <div>
+      <h3>Çfarë ndodh në terren</h3>
+      <p>Në KosovaRef01, 1 km në terren del <b>999.90 deri 999.98 m</b> në hartë, pra 2 deri 10 cm më shkurt. Në UTM del <b>999.60 deri 999.68 m</b>, pra 32 deri 40 cm më shkurt.</p>
+      <p>Gabimi i UTM në Kosovë është rreth katër herë më i madh. Për kadastër dhe punime inxhinierike kjo është arsyeja kryesore për zonën lokale 3°. Këtu nuk përfshihet reduktimi për lartësinë mbi elipsoid.</p>
+    </div>
+    <div>
+      <h3>Konvertimi mes tyre</h3>
+      <p>Meridiani qendror është i njëjtë dhe GRS80 e WGS84 dallojnë vetëm nën milimetër, ndaj kalimi është shkallëzim i thjeshtë:</p>
+      <div class="eq wrap">E<sub>KR</sub> = 7 500 000 + (E<sub>UTM</sub> − 500 000) · 0.9999 / 0.9996<br>N<sub>KR</sub> = N<sub>UTM</sub> · 0.9999 / 0.9996</div>
+      <p>Prandaj N dallon rreth <b>1.4 km</b>. KosovaRef01 mbështetet në ETRS89, ndërsa WGS84 lëviz me pllakën euroaziatike; dallimi rreth 0.9 m në 2026 nuk mbulohet nga kjo formulë.</p>
+    </div>
+  </section>
+  <hr>
+
+  <section class="lower">
+    <div class="tbl">
+      <div class="lbl" style="margin-bottom:8px">Parametrat</div>
+      <table class="params">
+        <thead><tr><th></th><th class="kr">EPSG:9141</th><th class="utm">EPSG:32634</th></tr></thead>
+        <tbody>
+          <tr><td>Datumi</td><td>KosovaRef01 (ETRS89)</td><td>WGS 84</td></tr>
+          <tr><td>Elipsoidi</td><td>GRS80</td><td>WGS84</td></tr>
+                    <tr><td>λ₀</td><td>21°E</td><td>21°E</td></tr>
+          <tr><td>k₀</td><td>0.9999</td><td>0.9996</td></tr>
+          <tr><td>False easting</td><td>7 500 000 m</td><td>500 000 m</td></tr>
+          <tr><td>False northing</td><td>0 m</td><td>0 m</td></tr>
+          <tr><td>Gjerësia e zonës</td><td>3° (19.5–22.5°E)</td><td>6° (18–24°E)</td></tr>
+          <tr><td>Vijat k = 1</td><td id="pxK">±90 km</td><td id="pxU">±180 km</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <div class="lbl" style="margin-bottom:8px">Ekuacionet</div>
+      <div class="eq">E = FE + k₀ · A · η &nbsp;&nbsp; N = FN + k₀ · A · ξ &nbsp;&nbsp; (seritë e Krügerit)</div>
+      <div class="eq">k ≈ k₀ · (1 + x² / 2R²) &nbsp;&nbsp; x = (E − FE) / k₀ &nbsp;&nbsp; R ≈ 6 381 km në 42.5°</div>
+      <div class="eq">k = 1 &nbsp;⇒&nbsp; x = ± R · √(2 (1/k₀ − 1))</div>
+      <p class="hint">k varet pothuajse vetëm nga x, prandaj vijat me shkallë të njëjtë janë vertikale. Koordinatat llogariten në faqe me seritë e Krügerit mbi GRS80 dhe përputhen me PROJ në nivel milimetri. Si te postimi për UTM: as KosovaRef01 / Balkans zone 7 nuk është projeksion më vete, por sistem koordinatash i ndërtuar mbi Transverse Mercator.</p>
+    </div>
+  </section>
+
+  <footer>Kufiri i Kosovës: i njëjti burim si në hartën e lumenjve të këtij repo-je, i thjeshtuar. Frymëzuar nga animacioni “Transverse Mercator” i Gonzalo Martínez-Troncoso. Parametrat: <a href="https://epsg.io/9141" target="_blank" rel="noopener">epsg.io/9141</a>, <a href="https://epsg.io/32634" target="_blank" rel="noopener">epsg.io/32634</a>.</footer>
+</div>
+
+<script>
+const KOS=[[20.7914,42.0833],[20.7763,42.0641],[20.7638,42.0437],[20.7499,42.0215],[20.7492,41.9977],[20.7648,41.9645],[20.7588,41.9419],[20.7729,41.9268],[20.7574,41.9067],[20.7364,41.8865],[20.7008,41.8629],[20.6813,41.8596],[20.6213,41.8578],[20.5784,41.9168],[20.6194,41.9394],[20.6243,41.9743],[20.6098,41.9915],[20.5857,42.0493],[20.5546,42.0826],[20.5648,42.1161],[20.5567,42.1391],[20.5445,42.1664],[20.509,42.2248],[20.4767,42.2534],[20.4465,42.2747],[20.4133,42.2831],[20.3866,42.3011],[20.3475,42.3235],[20.314,42.3204],[20.2859,42.3233],[20.2573,42.3188],[20.2361,42.3473],[20.2402,42.3736],[20.2179,42.3941],[20.2268,42.4184],[20.2207,42.4323],[20.2078,42.4445],[20.1968,42.4625],[20.18,42.4806],[20.1665,42.5004],[20.1495,42.5144],[20.1141,42.5271],[20.0983,42.5366],[20.0763,42.5558],[20.0873,42.5809],[20.075,42.6017],[20.0782,42.6238],[20.0931,42.6372],[20.0946,42.6663],[20.0528,42.6884],[20.0319,42.702],[20.0172,42.7133],[20.0322,42.7201],[20.0145,42.7294],[20.0212,42.7501],[20.03,42.7659],[20.0501,42.7756],[20.0873,42.7747],[20.1199,42.7622],[20.1468,42.7546],[20.1803,42.7534],[20.2102,42.747],[20.2343,42.7527],[20.2583,42.7711],[20.2553,42.8074],[20.2675,42.8179],[20.2811,42.8307],[20.298,42.8351],[20.3166,42.8291],[20.3436,42.8331],[20.3846,42.8429],[20.4194,42.8434],[20.4932,42.8691],[20.5383,42.8832],[20.527,42.8913],[20.4846,42.9338],[20.4981,42.9539],[20.5241,42.9732],[20.5391,42.9654],[20.5525,42.9738],[20.5648,42.9845],[20.5678,42.9965],[20.5905,43.0146],[20.6185,43.0157],[20.6173,43.0031],[20.6388,43.0068],[20.6482,43.0234],[20.6666,43.0353],[20.6654,43.0496],[20.6677,43.0667],[20.6599,43.0767],[20.6836,43.0817],[20.6932,43.0948],[20.6893,43.1127],[20.6734,43.1267],[20.662,43.1443],[20.6517,43.1564],[20.6247,43.1654],[20.6087,43.1772],[20.6118,43.1868],[20.5971,43.2017],[20.6041,43.207],[20.6332,43.2097],[20.651,43.2093],[20.6887,43.2149],[20.6993,43.2252],[20.7174,43.2341],[20.7347,43.2483],[20.7747,43.2543],[20.7973,43.2657],[20.836,43.2617],[20.8649,43.2368],[20.8798,43.2222],[20.886,43.2077],[20.8696,43.2063],[20.8413,43.2028],[20.8484,43.1856],[20.8418,43.1737],[20.8633,43.1648],[20.8855,43.16],[20.9216,43.1477],[20.9328,43.1365],[20.9604,43.1255],[20.9801,43.1358],[21.0066,43.1353],[21.0304,43.124],[21.0463,43.1124],[21.0758,43.115],[21.0814,43.1305],[21.1018,43.1185],[21.1241,43.1132],[21.1434,43.1037],[21.1438,43.0869],[21.1425,43.0734],[21.1515,43.0618],[21.1523,43.0403],[21.1659,43.0284],[21.1634,43.0147],[21.1723,43.0022],[21.1937,43.0101],[21.2186,43.0209],[21.2332,43.0093],[21.2377,42.9898],[21.2394,42.9661],[21.2449,42.9384],[21.2589,42.9202],[21.2711,42.8972],[21.3029,42.9042],[21.3237,42.9017],[21.3438,42.8927],[21.351,42.8846],[21.3698,42.8734],[21.3934,42.8674],[21.4216,42.8735],[21.4371,42.8516],[21.4233,42.8402],[21.4179,42.8188],[21.412,42.8065],[21.4133,42.7903],[21.4094,42.7729],[21.3984,42.764],[21.393,42.7452],[21.4201,42.7462],[21.4477,42.7499],[21.4675,42.7363],[21.4793,42.7477],[21.5016,42.7347],[21.5192,42.7281],[21.5488,42.7306],[21.578,42.7287],[21.5866,42.7071],[21.6112,42.6967],[21.6337,42.6987],[21.6441,42.6833],[21.6588,42.6674],[21.6719,42.6803],[21.7033,42.6927],[21.7317,42.6952],[21.7563,42.6909],[21.7718,42.6721],[21.784,42.6467],[21.7683,42.6335],[21.7553,42.6313],[21.7532,42.6242],[21.7512,42.6086],[21.7339,42.6012],[21.7449,42.5827],[21.7473,42.5622],[21.7223,42.5479],[21.7036,42.547],[21.6967,42.5399],[21.7,42.5276],[21.7102,42.5181],[21.7016,42.5142],[21.6916,42.5085],[21.6835,42.4998],[21.6699,42.4881],[21.6603,42.4803],[21.6459,42.4704],[21.6312,42.4599],[21.6225,42.4519],[21.634,42.4329],[21.6385,42.4204],[21.6386,42.4044],[21.6302,42.3945],[21.6126,42.3759],[21.5867,42.3803],[21.5741,42.3738],[21.5729,42.3652],[21.5526,42.3635],[21.5404,42.3734],[21.5349,42.3582],[21.5282,42.3459],[21.5267,42.3316],[21.5314,42.3221],[21.5373,42.3161],[21.5466,42.3102],[21.5547,42.3139],[21.5644,42.3077],[21.566,42.2964],[21.5853,42.2722],[21.5817,42.2601],[21.5577,42.2508],[21.5424,42.2515],[21.532,42.2406],[21.5204,42.2513],[21.5165,42.263],[21.505,42.2709],[21.492,42.2733],[21.4567,42.2765],[21.4401,42.273],[21.4349,42.2496],[21.4425,42.2351],[21.4324,42.2324],[21.4244,42.2398],[21.42,42.2441],[21.4109,42.2459],[21.396,42.2477],[21.3824,42.2438],[21.3753,42.236],[21.3682,42.2231],[21.3571,42.2178],[21.3458,42.2048],[21.3311,42.1991],[21.3291,42.1814],[21.3218,42.1738],[21.3212,42.1614],[21.3099,42.1448],[21.3066,42.134],[21.3116,42.1247],[21.3202,42.1088],[21.2994,42.1109],[21.2942,42.1092],[21.2892,42.1046],[21.2726,42.0959],[21.2374,42.0947],[21.2256,42.0954],[21.2202,42.1009],[21.2144,42.1086],[21.2153,42.119],[21.2151,42.1301],[21.2089,42.1373],[21.203,42.1476],[21.1922,42.1555],[21.1844,42.1634],[21.1767,42.1737],[21.1694,42.1851],[21.1689,42.1884],[21.1606,42.1975],[21.1118,42.2058],[21.0926,42.196],[21.0571,42.1758],[21.0339,42.1592],[21.0108,42.1501],[20.9826,42.1391],[20.9571,42.1364],[20.9304,42.1299],[20.915,42.1167],[20.8853,42.097],[20.8606,42.0996],[20.8359,42.0894],[20.8026,42.0816]];
+const D=Math.PI/180, a=6378137, f=1/298.257222101, e2=f*(2-f), e=Math.sqrt(e2), n=f/(2-f);
+const AA=a/(1+n)*(1+n*n/4+n**4/64);
+const al=[n/2-2*n*n/3+5*n**3/16, 13*n*n/48-3*n**3/5, 61*n**3/240];
+const L0=21;
+function tm(lon,lat){ // k0=1, FE=0
+  const phi=lat*D, lam=(lon-L0)*D, s=Math.sin(phi);
+  const t=Math.sinh(Math.atanh(s)-e*Math.atanh(e*s));
+  const xp=Math.atan2(t,Math.cos(lam)), ep=Math.atanh(Math.sin(lam)/Math.sqrt(1+t*t));
+  let xi=xp, eta=ep;
+  for(let j=1;j<=3;j++){xi+=al[j-1]*Math.sin(2*j*xp)*Math.cosh(2*j*ep);eta+=al[j-1]*Math.cos(2*j*xp)*Math.sinh(2*j*ep);}
+  return [AA*eta, AA*xi];
+}
+function kBase(lon,lat){
+  const d=1e-5, p=tm(lon-d/2,lat), q=tm(lon+d/2,lat), s=Math.sin(lat*D);
+  const nu=a/Math.sqrt(1-e2*s*s);
+  return Math.hypot(q[0]-p[0],q[1]-p[1])/(nu*Math.cos(lat*D)*d*D);
+}
+function inv(x,y){ // Newton on forward
+  let lon=L0+x/82000, lat=y/111100;
+  for(let i=0;i<6;i++){
+    const p=tm(lon,lat), h=1e-6, px=tm(lon+h,lat), py=tm(lon,lat+h);
+    const a11=(px[0]-p[0])/h, a12=(py[0]-p[0])/h, a21=(px[1]-p[1])/h, a22=(py[1]-p[1])/h;
+    const r0=x-p[0], r1=y-p[1], det=a11*a22-a12*a21;
+    lon+=(a22*r0-a12*r1)/det; lat+=(a11*r1-a21*r0)/det;
+  }
+  return [lon,lat];
+}
+const SYS={kr:{k0:0.9999,FE:7500000,id:'mapKR',col:'--kr'},utm:{k0:0.9996,FE:500000,id:'mapUTM',col:'--utm'}};
+const R=6381000;
+const xOne=k0=>R*Math.sqrt(2*(1/k0-1));
+
+// boundary in base coords
+const poly=KOS.map(([lo,la])=>tm(lo,la));
+let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
+poly.forEach(([x,y])=>{minX=Math.min(minX,x);maxX=Math.max(maxX,x);minY=Math.min(minY,y);maxY=Math.max(maxY,y)});
+const PAD=9000, W=420, padL=12, padR=12, padT=26, padB=34;
+const bx0=minX-PAD, bx1=maxX+PAD, by0=minY-PAD, by1=maxY+PAD;
+const sc=(W-padL-padR)/(bx1-bx0), H=Math.round((by1-by0)*sc+padT+padB);
+const X=x=>padL+(x-bx0)*sc, Y=y=>padT+(by1-y)*sc;
+const NS='http://www.w3.org/2000/svg';
+function el(parent,tag,attrs,text){const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);if(text!=null)e.textContent=text;parent.appendChild(e);return e;}
+const cssv=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const fmt=(v,d=0)=>v.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}).replace(/,/g,' ');
+function inside(lo,la){let c=false;for(let i=0,j=KOS.length-1;i<KOS.length;j=i++){const[xi,yi]=KOS[i],[xj,yj]=KOS[j];if((yi>la)!==(yj>la)&&lo<(xj-xi)*(la-yi)/(yj-yi)+xi)c=!c;}return c;}
+
+// Tissot centres
+const tissot=[];
+for(let la=41.95;la<=43.25;la+=0.17)for(let lo=20.1;lo<=21.8;lo+=0.21){if(inside(lo,la))tissot.push([lo,la]);}
+
+const maps={};
+function buildMap(key){
+  const s=SYS[key], svg=document.getElementById(s.id);
+  svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  const cid='clip'+key;
+  const defs=el(svg,'defs',{});
+  const cp=el(defs,'clipPath',{id:cid});
+  const pts=poly.map(([x,y])=>X(x).toFixed(1)+','+Y(y).toFixed(1)).join(' ');
+  el(cp,'polygon',{points:pts});
+  el(svg,'polygon',{points:pts,fill:'var(--land)'});
+  // distortion bands
+  const g=el(svg,'g',{'clip-path':`url(#${cid})`});
+  const step=2000;
+  for(let x=Math.floor(bx0/step)*step;x<bx1;x+=step){
+    const xm=x+step/2, k=s.k0*(1+xm*xm/(2*R*R)), ppm=(k-1)*1e6;
+    const op=Math.min(1,Math.max(0,-ppm/400))*0.85;
+    el(g,'rect',{x:X(x),y:0,width:step*sc+1,height:H,fill:'var(--cmp)','fill-opacity':op.toFixed(3),'shape-rendering':'crispEdges'});
+  }
+  // graticule (lon/lat) faint
+  const gg=el(g,'g',{stroke:'var(--muted)','stroke-opacity':.25,'stroke-width':.6,fill:'none'});
+  for(let lo=20;lo<=22;lo+=0.5){const p=[];for(let la=41.7;la<=43.4;la+=0.05)p.push(tm(lo,la));el(gg,'polyline',{points:p.map(([x,y])=>X(x)+','+Y(y)).join(' ')});}
+  for(let la=42;la<=43.25;la+=0.5){const p=[];for(let lo=19.8;lo<=22;lo+=0.05)p.push(tm(lo,la));el(gg,'polyline',{points:p.map(([x,y])=>X(x)+','+Y(y)).join(' ')});}
+  // equal-scale lines
+  [-75000,-50000,-25000,25000,50000].forEach(x=>{
+    if(x<bx0||x>bx1)return;
+    const k=s.k0*(1+x*x/(2*R*R));
+    el(svg,'line',{x1:X(x),x2:X(x),y1:padT,y2:H-padB,stroke:`var(${s.col})`,'stroke-opacity':.5,'stroke-dasharray':'2 3','stroke-width':1});
+    const t=el(svg,'text',{x:0,y:0,'font-size':9.5,fill:`var(${s.col})`,transform:`translate(${X(x)-3},${H-padB-6}) rotate(-90)`},'k '+k.toFixed(5));
+  });
+  // central meridian
+  el(svg,'line',{x1:X(0),x2:X(0),y1:padT-6,y2:H-padB,stroke:`var(${s.col})`,'stroke-width':2});
+  el(svg,'text',{x:X(0)+5,y:padT+4,'font-size':11,fill:`var(${s.col})`},'λ₀ 21°E');
+  el(svg,'text',{x:0,y:0,'font-size':9.5,fill:`var(${s.col})`,transform:`translate(${X(0)-3},${H-padB-6}) rotate(-90)`},'k '+s.k0.toFixed(5));
+  // tissot
+  const tg=el(svg,'g',{});
+  tissot.forEach(([lo,la])=>{
+    const [x,y]=tm(lo,la), k=s.k0*kBase(lo,la), r0=7.2, r=r0*(1+(k-1)*1000);
+    el(tg,'circle',{cx:X(x),cy:Y(y),r:r0,fill:'none',stroke:'var(--fg)','stroke-opacity':.35,'stroke-dasharray':'1.5 2','stroke-width':.7});
+    el(tg,'circle',{cx:X(x),cy:Y(y),r:r.toFixed(2),fill:`var(${s.col})`,'fill-opacity':.55});
+  });
+  // outline
+  el(svg,'polygon',{points:pts,fill:'none',stroke:'var(--fg)','stroke-opacity':.8,'stroke-width':1.1,'stroke-linejoin':'round'});
+  // axis ticks: E every 25 km in this system's coordinates
+  const ax=el(svg,'g',{'font-size':9.5,fill:'var(--muted)'});
+  el(ax,'line',{x1:padL,x2:W-padR,y1:H-padB+4,y2:H-padB+4,stroke:'var(--line)'});
+  for(let x=-75000;x<=75000;x+=25000){if(x<bx0||x>bx1)continue;const E=s.FE+s.k0*x;
+    el(ax,'line',{x1:X(x),x2:X(x),y1:H-padB+4,y2:H-padB+8,stroke:'var(--muted)'});
+    el(ax,'text',{x:X(x),y:H-padB+19,'text-anchor':'middle'},fmt(Math.round(E/1000))+' km');}
+  el(ax,'text',{x:W-padR,y:H-4,'text-anchor':'end'},'E');
+  for(let yv=4650000;yv<=4790000;yv+=50000){const yy=Y(yv);if(yy<padT||yy>H-padB)continue;
+    el(ax,'text',{x:padL+2,y:yy-3},'N '+fmt(Math.round(s.k0*yv/1000))+' km');
+    el(ax,'line',{x1:padL,x2:padL+8,y1:yy,y2:yy,stroke:'var(--muted)'});}
+  // point A
+  const ag=el(svg,'g',{});
+  const halo=el(ag,'circle',{r:11,fill:'var(--a)','fill-opacity':.25});
+  const dot=el(ag,'circle',{r:4.5,fill:'var(--a)',stroke:'var(--bg)','stroke-width':1.5});
+  const lab=el(ag,'text',{'font-size':13,'font-weight':600,fill:'var(--a)'},'A');
+  maps[key]={svg,halo,dot,lab};
+  // interaction
+  let drag=false;
+  const toBase=ev=>{const r=svg.getBoundingClientRect();const px=(ev.clientX-r.left)/r.width*W, py=(ev.clientY-r.top)/r.height*H;return [bx0+(px-padL)/sc, by1-(py-padT)/sc];};
+  svg.addEventListener('pointerdown',ev=>{drag=true;svg.setPointerCapture(ev.pointerId);setPlaying(false);const [x,y]=toBase(ev);setA(...inv(x,y));routeEl.textContent='Pikë e zgjedhur';});
+  svg.addEventListener('pointermove',ev=>{if(!drag)return;const [x,y]=toBase(ev);setA(...inv(x,y));});
+  svg.addEventListener('pointerup',()=>drag=false);
+  svg.addEventListener('pointercancel',()=>drag=false);
+}
+
+// chart
+const C={svg:document.getElementById('chart'),w:620,h:330,l:62,r:16,t:18,b:42};
+const cx=x=>C.l+(x+200000)/400000*(C.w-C.l-C.r);
+const cy=p=>C.t+(450-p)/900*(C.h-C.t-C.b);
+function buildChart(){
+  const s=C.svg;
+  // Kosovo extent band
+  el(s,'rect',{x:cx(minX),y:C.t,width:cx(maxX)-cx(minX),height:C.h-C.t-C.b,fill:'var(--fg)','fill-opacity':.06});
+  el(s,'text',{x:(cx(minX)+cx(maxX))/2,y:C.t+12,'text-anchor':'middle','font-size':10,fill:'var(--muted)'},'Kosova');
+  for(let p=-400;p<=400;p+=200){
+    el(s,'line',{x1:C.l,x2:C.w-C.r,y1:cy(p),y2:cy(p),stroke:p===0?'var(--fg)':'var(--line)','stroke-opacity':p===0?.55:1,'stroke-width':p===0?1.2:1});
+    el(s,'text',{x:C.l-6,y:cy(p)+3.5,'text-anchor':'end','font-size':10.5,fill:'var(--muted)'},(1+p/1e6).toFixed(4));
+  }
+  el(s,'text',{x:12,y:C.t+(C.h-C.t-C.b)/2,'font-size':11,fill:'var(--muted)',transform:`rotate(-90 12 ${C.t+(C.h-C.t-C.b)/2})`,'text-anchor':'middle'},'k');
+  for(let x=-200000;x<=200000;x+=50000){
+    el(s,'line',{x1:cx(x),x2:cx(x),y1:C.h-C.b,y2:C.h-C.b+4,stroke:'var(--muted)'});
+    el(s,'text',{x:cx(x),y:C.h-C.b+16,'text-anchor':'middle','font-size':10.5,fill:'var(--muted)'},fmt(x/1000));
+  }
+  el(s,'text',{x:(C.l+C.w-C.r)/2,y:C.h-6,'text-anchor':'middle','font-size':10.5,fill:'var(--muted)'},'x, largësia nga 21°E (km) · perëndim ← → lindje');
+  el(s,'line',{x1:cx(0),x2:cx(0),y1:C.t,y2:C.h-C.b,stroke:'var(--muted)','stroke-dasharray':'3 3'});
+  ['kr','utm'].forEach(key=>{
+    const sy=SYS[key], p=[];
+    for(let x=-200000;x<=200000;x+=4000){const k=sy.k0*(1+x*x/(2*R*R));p.push(cx(x).toFixed(1)+','+cy((k-1)*1e6).toFixed(1));}
+    el(s,'polyline',{points:p.join(' '),fill:'none',stroke:`var(${sy.col})`,'stroke-width':2.2});
+    const xo=xOne(sy.k0);
+    [-xo,xo].forEach(x=>{el(s,'circle',{cx:cx(x),cy:cy(0),r:3.2,fill:'var(--bg)',stroke:`var(${sy.col})`,'stroke-width':1.6});});
+    el(s,'text',{x:cx(xo)+(key==='kr'?6:-6),y:cy(0)+(key==='kr'?-8:14),'font-size':10.5,fill:`var(${sy.col})`,'text-anchor':key==='kr'?'start':'end'},'k=1 @ ±'+Math.round(xo/1000)+' km');
+  });
+  el(s,'text',{x:cx(-190000),y:cy(-400)+16,'font-size':11,fill:'var(--utm)'},'UTM 34N');
+  el(s,'text',{x:cx(-190000),y:cy(40)-8,'font-size':11,fill:'var(--kr)'},'KosovaRef01');
+  C.vline=el(s,'line',{y1:C.t,y2:C.h-C.b,stroke:'var(--a)','stroke-width':1});
+  C.mk=el(s,'circle',{r:5,fill:'var(--a)'});
+  C.mu=el(s,'circle',{r:5,fill:'var(--a)'});
+  C.lab=el(s,'text',{'font-size':12,'font-weight':600,fill:'var(--a)'},'A');
+}
+
+const $=id=>document.getElementById(id);
+const routeEl=$('route');
+function setA(lon,lat){
+  const [x,y]=tm(lon,lat), kb=kBase(lon,lat);
+  for(const key in maps){const m=maps[key];
+    m.halo.setAttribute('cx',X(x));m.halo.setAttribute('cy',Y(y));
+    m.dot.setAttribute('cx',X(x));m.dot.setAttribute('cy',Y(y));
+    m.lab.setAttribute('x',X(x)+8);m.lab.setAttribute('y',Y(y)-8);}
+  const K=SYS.kr,U=SYS.utm;
+  const EK=K.FE+K.k0*x, NK=K.k0*y, EU=U.FE+U.k0*x, NU=U.k0*y, kK=K.k0*kb, kU=U.k0*kb;
+  $('ll').textContent=`${lon.toFixed(4)}°E   ${lat.toFixed(4)}°N`;
+  $('eK').textContent=fmt(EK,2);$('eU').textContent=fmt(EU,2);$('eD').textContent='7 000 000 + '+fmt(EK-EU-7000000,2);
+  $('nK').textContent=fmt(NK,2);$('nU').textContent=fmt(NU,2);$('nD').textContent=fmt(NK-NU,2);
+  $('dx').textContent=`${x>=0?'+':'−'}${fmt(Math.abs(x)/1000,1)} km  (${x>=0?'lindje':'perëndim'} e λ₀)`;
+  $('kK').textContent=kK.toFixed(6);$('kU').textContent=kU.toFixed(6);$('kD').textContent=(kK-kU).toFixed(6);
+  $('pK').textContent=fmt((kK-1)*1e6,0)+' ppm';$('pU').textContent=fmt((kU-1)*1e6,0)+' ppm';
+  $('mK').textContent=fmt(kK*1000,3)+' m';$('mU').textContent=fmt(kU*1000,3)+' m';
+  const xx=cx(x);C.vline.setAttribute('x1',xx);C.vline.setAttribute('x2',xx);
+  C.mk.setAttribute('cx',xx);C.mk.setAttribute('cy',cy((kK-1)*1e6));
+  C.mu.setAttribute('cx',xx);C.mu.setAttribute('cy',cy((kU-1)*1e6));
+  C.lab.setAttribute('x',xx+7);C.lab.setAttribute('y',cy((kU-1)*1e6)-8);
+}
+
+const CITIES=[['Prishtinë',21.1655,42.6629],['Ferizaj',21.1550,42.3706],['Gjilan',21.4694,42.4636],['Podujevë',21.1906,42.9106],['Mitrovicë',20.8650,42.8914],['Pejë',20.2887,42.6593],['Gjakovë',20.4310,42.3803],['Prizren',20.7397,42.2139]];
+let playing=!matchMedia('(prefers-reduced-motion: reduce)').matches, t=0, last=null;
+function setPlaying(v){playing=v;$('play').textContent=v?'Ndalo':'Luaj';if(v){last=null;requestAnimationFrame(tick);}}
+$('play').addEventListener('click',()=>setPlaying(!playing));
+function posAt(t){
+  const N=CITIES.length, i=Math.floor(t)%N, j=(i+1)%N, u=t-Math.floor(t);
+  const s=u<.18?0:u>.82?1:((u-.18)/.64), e=s*s*(3-2*s);
+  const A=CITIES[i],B=CITIES[j];
+  return {lon:A[1]+(B[1]-A[1])*e, lat:A[2]+(B[2]-A[2])*e, label:`${A[0]} → ${B[0]}`};
+}
+function tick(ts){
+  if(!playing)return;
+  if(last!=null)t+=(ts-last)/3200;
+  last=ts;
+  const p=posAt(t);setA(p.lon,p.lat);routeEl.textContent=p.label;
+  requestAnimationFrame(tick);
+}
+buildMap('kr');buildMap('utm');buildChart();
+$('xKR').textContent=$('pxK').textContent='±'+fmt(xOne(0.9999)/1000,1)+' km';
+$('xU').textContent=$('pxU').textContent='±'+fmt(xOne(0.9996)/1000,1)+' km';
+{const p=posAt(0);setA(p.lon,p.lat);}
+$('play').textContent=playing?'Ndalo':'Luaj';
+if(playing)requestAnimationFrame(tick);
+</script>
