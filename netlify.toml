@@ -1,0 +1,10 @@
+# Netlify: webmap "Sa larg arrin në Kosovë" (kosova-izokrone)
+[build]
+  base = "kosova-izokrone"
+  command = "bash netlify-build.sh"
+  publish = "dist"
+
+[[headers]]
+  for = "/data/*"
+  [headers.values]
+    Cache-Control = "public, max-age=86400"

@@ -1,17 +1,19 @@
 # Sa larg arrin në Kosovë — me makinë / në këmbë
 
-Webmap (funksionon edhe si app në telefon) në stilin e Chronotrains: animon sa larg arrin nga çdo pikë e Kosovës
-**me makinë** (0–3 orë) ose **në këmbë** (0–6 orë).
+Webmap në stilin e Chronotrains që animon sa larg arrin nga çdo pikë e Kosovës
+**me makinë** (0–3 orë) ose **në këmbë** (0–12 orë), me të dhëna OpenStreetMap.
 
-- Të dhënat rrugore merren **live nga OpenStreetMap** (Overpass API) në shfletues dhe ruhen në pajisje (IndexedDB, 30 ditë).
-- Rrjeti rrugor ndërtohet dhe kohët llogariten (Dijkstra) në shfletues; makina respekton rrugët njëdrejtimëshe.
-- Shpejtësitë: sipas klasës së rrugës ose `maxspeed` (makinë), 5 km/h (në këmbë), pa trafik.
+## Publikimi në Netlify
+1. Netlify → **Add new site → Import an existing project → GitHub** → zgjidh `WizardRixah`.
+2. Zgjidh degën (p.sh. `main` ose `ccr-1b0e3e25-gl14yy`). Cilësimet merren nga `netlify.toml`
+   (base `kosova-izokrone`, komanda `bash netlify-build.sh`, publish `dist`).
+3. **Deploy**. Ndërtimi shkarkon OSM për Kosovën nga Geofabrik, ndërton rrjetet rrugore dhe publikon faqen.
+   Për të dhëna të reja: *Deploys → Trigger deploy*.
 
-Faqja e gatshme: `../kosova-izokrone.html` (një skedar i vetëm).
+## Skedarët
+- `app.html` – faqja (Leaflet + canvas; Dijkstra në shfletues).
+- `process.py` – OSM `.pbf` → `data/car.bin.gz`, `data/walk.bin.gz`, `data/places.json`.
+- `build_app.py` – fut kufirin (`border.json`, nga `komunat.geojson`) dhe krijon `dist/index.html`.
+- `netlify-build.sh` – i gjithë ndërtimi.
 
-## Ndërtimi
-`app.html` është burimi; `build_app.py` fut kufirin e Kosovës (`border.json`, nga `komunat.geojson`) dhe krijon `../kosova-izokrone.html`:
-```bash
-pip install shapely
-python kosova-izokrone/build_app.py
-```
+Shpejtësitë: sipas klasës së rrugës ose `maxspeed` (makinë, me rrugë njëdrejtimëshe), 5 km/h (në këmbë); pa trafik.

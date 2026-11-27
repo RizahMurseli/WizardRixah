@@ -138,9 +138,8 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
     </div>
     <h2>Qytetet</h2>
     <ul id="reached"></ul>
-    <p class="src">Të dhënat: © kontribuesit e <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>, marrë live nga Overpass API dhe ruajtur në pajisje.
-      Kohët janë vlerësime nga klasa e rrugës ose <i>maxspeed</i> (makinë) dhe 5 km/h (në këmbë), pa trafik.
-      <br><button id="refresh" style="margin-top:6px;font-size:12px">Rifresko të dhënat OSM</button></p>
+    <p class="src">Të dhënat: © kontribuesit e <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a><span id="osmDate"></span>.
+      Kohët janë vlerësime nga klasa e rrugës ose <i>maxspeed</i> (makinë) dhe 5 km/h (në këmbë), pa trafik.</p>
   </div>
 </div>
 
@@ -155,175 +154,21 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 <script>
 "use strict";
 const BORDER = __BORDER__;
-const QPOLY = __QPOLY__;            // simplified, slightly buffered border for Overpass
-const OVERPASS = [
-  'https://overpass-api.de/api/interpreter',
-  'https://overpass.kumi.systems/api/interpreter',
-  'https://maps.mail.ru/osm/tools/overpass/api/interpreter'
-];
+const DATA = 'data/';
 const MODES = {
   car:  {label:'me makinë', max:180, ticks:[0,30,60,90,120,150,180], dur:22},
-  walk: {label:'në këmbë',  max:360, ticks:[0,60,120,180,240,300,360], dur:24, radius:31000}
+  walk: {label:'në këmbë',  max:720, ticks:[0,120,240,360,480,600,720], dur:26}
 };
 const PAL = ['#fff6c2','#ffd166','#ffa43a','#fb6b2e','#f0306a','#c2268f','#8a2fc9','#4f4fd9','#2f7be6','#2fb3e6'];
 const NB = 40;
-const CACHE_DAYS = 30;
 
-/* ---------------- OSM → graph ---------------- */
-const CLASSES = ['motorway','trunk','primary','secondary','tertiary','unclassified','residential',
-  'living_street','service','track','path','footway','steps','pedestrian','cycleway','bridleway','road'];
-const CAR_SPEED = {motorway:110,trunk:85,primary:65,secondary:55,tertiary:45,unclassified:35,
-  residential:25,living_street:10,road:25,service:15,track:15};
-const LINK_SPEED = {motorway:50,trunk:45,primary:40,secondary:35,tertiary:30};
-const NO = new Set(['no','private']);
-const polyStr = QPOLY.map(([x,y])=>`${y} ${x}`).join(' ');
-
-function queryFor(mode, lat, lon){
-  if (mode==='car') return `[out:json][timeout:180];
-way["highway"~"^(motorway|trunk|primary|secondary|tertiary|unclassified|residential|living_street|road)(_link)?$"](poly:"${polyStr}");
-out body qt;>;out skel qt;`;
-  return `[out:json][timeout:180];
-way["highway"]["highway"!~"^(motorway|motorway_link|construction|proposed|platform|raceway|bus_stop|elevator|corridor|abandoned)$"]["area"!="yes"](around:${MODES.walk.radius},${lat},${lon})(poly:"${polyStr}");
-out body qt;>;out skel qt;`;
-}
-const PLACE_Q = `[out:json][timeout:60];node["place"~"^(city|town|village)$"]["name"](poly:"${polyStr}");out body qt;`;
-
-async function overpass(q, onProgress){
-  let lastErr;
-  for (const url of OVERPASS){
-    try{
-      const r = await fetch(url,{method:'POST',body:'data='+encodeURIComponent(q),
-        headers:{'Content-Type':'application/x-www-form-urlencoded'}});
-      if (!r.ok) throw new Error('HTTP '+r.status);
-      const reader = r.body.getReader(); const chunks=[]; let got=0;
-      for(;;){ const {done,value}=await reader.read(); if (done) break; chunks.push(value); got+=value.length; onProgress&&onProgress(got); }
-      const buf = new Uint8Array(got); let o=0; for (const c of chunks){ buf.set(c,o); o+=c.length; }
-      const txt = new TextDecoder().decode(buf);
-      const js = JSON.parse(txt);
-      if (js.remark && /error|timed out|runtime/i.test(js.remark) && !js.elements.length) throw new Error(js.remark);
-      return js;
-    }catch(e){ lastErr=e; console.warn('Overpass', url, e); }
-  }
-  throw lastErr;
-}
-
-function parseSpeed(s){
-  if (!s) return null; s=String(s).trim().toLowerCase();
-  const v=parseFloat(s); if (!isFinite(v)) return null;
-  return s.endsWith('mph') ? v*1.609 : v;
-}
-function wayAttrs(t){
-  const hw=t.highway; if (!hw) return null;
-  const isLink = hw.endsWith('_link'), base = isLink ? hw.slice(0,-5) : hw;
-  const cls = CLASSES.indexOf(base); if (cls<0 || t.area==='yes') return null;
-  if (NO.has(t.access) && !t.foot && !t.motor_vehicle) return null;
-  let car=0;
-  if (CAR_SPEED[base] && !NO.has(t.motor_vehicle) && !NO.has(t.motorcar) && !NO.has(t.access) &&
-      !(base==='track' && !['grade1','grade2'].includes(t.tracktype))){
-    let d = isLink ? LINK_SPEED[base] : CAR_SPEED[base];
-    const ms = parseSpeed(t.maxspeed);
-    if (ms && !isLink) d = Math.min(d*1.25, ms*0.9);
-    car = Math.max(5, Math.min(130, Math.round(d)));
-  }
-  let walk=0;
-  if ((base!=='motorway' && base!=='trunk') || ['yes','designated'].includes(t.foot)){
-    if (!NO.has(t.foot) && t.motorroad!=='yes') walk = base==='steps' ? 30 : ['path','track','bridleway'].includes(base) ? 45 : 50;
-  }
-  let dir=0; // 0 both, 1 forward only, 2 backward only (car)
-  const ow=t.oneway;
-  if (ow==='yes'||ow==='1'||ow==='true') dir=1; else if (ow==='-1'||ow==='reverse') dir=2;
-  else if (ow!=='no' && (t.junction==='roundabout'||base==='motorway')) dir=1;
-  return {car,walk,cls,dir};
-}
-
-const R=6371008.8, RAD=Math.PI/180;
+/* ---------------- data (precomputed from OSM by GitHub Actions) ---------------- */
+const RAD=Math.PI/180;
 function hav(lo1,la1,lo2,la2){
   const p1=la1*RAD,p2=la2*RAD,dp=p2-p1,dl=(lo2-lo1)*RAD;
   const a=Math.sin(dp/2)**2+Math.cos(p1)*Math.cos(p2)*Math.sin(dl/2)**2;
-  return 2*R*Math.asin(Math.sqrt(a));
+  return 2*6371008.8*Math.asin(Math.sqrt(a));
 }
-function dpKeep(xs,ys,a,b,tol,keep){ // iterative Douglas–Peucker
-  const st=[[a,b]];
-  while(st.length){
-    const [i0,i1]=st.pop(); const dx=xs[i1]-xs[i0], dy=ys[i1]-ys[i0], L=dx*dx+dy*dy;
-    let best=-1,bi=-1;
-    for (let i=i0+1;i<i1;i++){
-      const px=xs[i]-xs[i0], py=ys[i]-ys[i0];
-      let t=L?(px*dx+py*dy)/L:0; t=t<0?0:t>1?1:t;
-      const ex=px-t*dx, ey=py-t*dy, d=ex*ex+ey*ey;
-      if (d>best){best=d;bi=i;}
-    }
-    if (best>tol*tol){ keep[bi]=1; st.push([i0,bi],[bi,i1]); }
-  }
-}
-
-// Build compact graph from Overpass JSON
-function buildGraph(js){
-  const nlon=new Map(), nlat=new Map();
-  const ways=[];
-  for (const el of js.elements){
-    if (el.type==='node'){ nlon.set(el.id,el.lon); nlat.set(el.id,el.lat); }
-    else if (el.type==='way' && el.nodes && el.tags) ways.push(el);
-  }
-  const use=new Map();
-  const wl=[];
-  for (const w of ways){
-    const a=wayAttrs(w.tags); if (!a || (!a.car && !a.walk)) continue;
-    const refs=w.nodes.filter(r=>nlon.has(r)); if (refs.length<2) continue;
-    wl.push([refs,a]);
-    refs.forEach((r,i)=>use.set(r,(use.get(r)||0)+((i===0||i===refs.length-1)?2:1)));
-  }
-  const idx=new Map(); const NX=[],NY=[];
-  const nid=r=>{ let i=idx.get(r); if (i===undefined){ i=NX.length; idx.set(r,i); NX.push(nlon.get(r)); NY.push(nlat.get(r)); } return i; };
-  const KX=Math.cos(42.6*RAD)*111320, KY=110540;
-  const U=[],V=[],LEN=[],CAR=[],WALK=[],CLS=[],DIR=[],PS=[0],PX=[],PY=[];
-  for (const [refs,a] of wl){
-    let s=0;
-    for (let i=1;i<refs.length;i++){
-      if (i===refs.length-1 || use.get(refs[i])>=2){
-        let L=0; const xs=[],ys=[];
-        for (let k=s;k<=i;k++){
-          const lo=nlon.get(refs[k]), la=nlat.get(refs[k]);
-          xs.push(lo*KX); ys.push(la*KY);
-          if (k>s) L+=hav(nlon.get(refs[k-1]),nlat.get(refs[k-1]),lo,la);
-        }
-        if (L>0.5){
-          U.push(nid(refs[s])); V.push(nid(refs[i]));
-          const keep=new Uint8Array(xs.length); dpKeep(xs,ys,0,xs.length-1,8,keep);
-          for (let k=1;k<xs.length-1;k++) if (keep[k]){ PX.push(nlon.get(refs[s+k])); PY.push(nlat.get(refs[s+k])); }
-          LEN.push(L); CAR.push(a.car); WALK.push(a.walk); CLS.push(a.cls); DIR.push(a.dir); PS.push(PX.length);
-        }
-        s=i;
-      }
-    }
-  }
-  return {N:NX.length, M:U.length,
-    lon:Float64Array.from(NX), lat:Float64Array.from(NY),
-    u:Uint32Array.from(U), v:Uint32Array.from(V), len:Float32Array.from(LEN),
-    car:Uint8Array.from(CAR), walk:Uint8Array.from(WALK), cls:Uint8Array.from(CLS), dir:Uint8Array.from(DIR),
-    ps:Uint32Array.from(PS), plon:Float64Array.from(PX), plat:Float64Array.from(PY)};
-}
-
-/* ---------------- IndexedDB cache ---------------- */
-const idb = (() => {
-  let dbp;
-  const open = () => dbp || (dbp = new Promise((res,rej)=>{
-    try{
-      const r=indexedDB.open('kosova-izokrone',1);
-      r.onupgradeneeded=()=>r.result.createObjectStore('kv');
-      r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error);
-    }catch(e){ rej(e); }
-  }));
-  const tx = (mode, fn) => open().then(db=>new Promise((res,rej)=>{
-    const t=db.transaction('kv',mode), s=t.objectStore('kv'), r=fn(s);
-    t.oncomplete=()=>res(r&&r.result); t.onerror=()=>rej(t.error);
-  }));
-  return {
-    get: k => tx('readonly', s=>s.get(k)).catch(()=>undefined),
-    set: (k,v) => tx('readwrite', s=>s.put(v,k)).catch(()=>undefined),
-    clear: () => tx('readwrite', s=>s.clear()).catch(()=>undefined)
-  };
-})();
 
 /* ---------------- status UI ---------------- */
 const st=document.getElementById('status'), stMsg=document.getElementById('stMsg'), stSub=document.getElementById('stSub');
@@ -336,58 +181,58 @@ function status(msg, sub, frac){
 const hideStatus=()=>{ st.hidden=true; };
 const nextFrame=()=>new Promise(r=>requestAnimationFrame(()=>setTimeout(r,0)));
 
-/* ---------------- data loading ---------------- */
-const graphs = {};           // car: graph ; walk: {graph, lat, lon}
-let PLACES = [];
+async function fetchBytes(url, onProgress){
+  const r=await fetch(url);
+  if (!r.ok) throw new Error('HTTP '+r.status+' '+url);
+  const total=+r.headers.get('content-length')||0;
+  if (!r.body || !r.body.getReader) return new Uint8Array(await r.arrayBuffer());
+  const reader=r.body.getReader(), chunks=[]; let got=0;
+  for(;;){ const {done,value}=await reader.read(); if (done) break; chunks.push(value); got+=value.length; onProgress&&onProgress(got,total); }
+  const buf=new Uint8Array(got); let o=0; for (const c of chunks){ buf.set(c,o); o+=c.length; }
+  return buf;
+}
+async function gunzip(bytes){
+  if (bytes[0]!==0x1f || bytes[1]!==0x8b) return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset+bytes.byteLength); // server already decoded it
+  return await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();
+}
+function decodeGraph(ab){
+  const dv=new DataView(ab);
+  if (String.fromCharCode(...new Uint8Array(ab,0,4))!=='KXG2') throw new Error('Format i panjohur i të dhënave');
+  const N=dv.getUint32(4,true), M=dv.getUint32(8,true), P=dv.getUint32(12,true);
+  let o=16;
+  const i32=n=>{ const a=new Int32Array(ab,o,n); o+=4*n; return a; };
+  const lon=i32(N), lat=i32(N);
+  const u=new Uint32Array(ab,o,M); o+=4*M;
+  const v=new Uint32Array(ab,o,M); o+=4*M;
+  const len=new Float32Array(ab,o,M); o+=4*M;
+  const spd=new Uint8Array(ab,o,M); o+=M;
+  const cls=new Uint8Array(ab,o,M); o+=M;
+  const dir=new Uint8Array(ab,o,M); o+=M;
+  o+=(4-o%4)%4;
+  const ps=new Uint32Array(ab,o,M+1); o+=4*(M+1);
+  const plon=i32(P), plat=i32(P);
+  const f=a=>{ const r=new Float64Array(a.length); for (let i=0;i<a.length;i++) r[i]=a[i]/1e5; return r; };
+  return {N,M,lon:f(lon),lat:f(lat),u,v,len,spd,cls,dir,ps,plon:f(plon),plat:f(plat)};
+}
 
-async function getGraph(mode, lat, lon, force){
-  const now=Date.now(), fresh = e => e && now-e.time < CACHE_DAYS*864e5;
-  if (mode==='car'){
-    if (graphs.car && !force) return graphs.car;
-    let e = force ? null : await idb.get('car');
-    if (!fresh(e)){
-      e = {time:now, g: await download(queryFor('car'), 'rrugët e makinave për gjithë Kosovën', 35e6)};
-      idb.set('car', e);
-    }
-    return graphs.car = prepare(e.g);
-  }
-  // walking: data around the origin, reuse while origin stays inside the covered area
-  const w = graphs.walk;
-  const covered = g => g && hav(g.lon0,g.lat0,lon,lat) < 4000;
-  if (w && covered(w) && !force) return w;
-  const key = `walk:${lat.toFixed(2)},${lon.toFixed(2)}`;
-  let e = force ? null : await idb.get(key);
-  if (!fresh(e)){
-    e = {time:now, g: await download(queryFor('walk',lat,lon), 'rrugët dhe shtigjet për këmbësorë (rreth 30 km)', 30e6)};
-    idb.set(key, e);
-  }
-  const g = prepare(e.g); g.lat0=lat; g.lon0=lon;
-  return graphs.walk = g;
+const graphs={};
+let PLACES=[];
+async function getGraph(mode){
+  if (graphs[mode]) return graphs[mode];
+  const what = mode==='car' ? 'rrjeti rrugor për makina' : 'rrugët dhe shtigjet për këmbësorë';
+  status('Duke ngarkuar '+what+'…','',0.02);
+  const bytes=await fetchBytes(DATA+mode+'.bin.gz', (got,total)=>status('Duke ngarkuar '+what+'…',
+    (got/1e6).toFixed(1)+(total?' / '+(total/1e6).toFixed(1):'')+' MB', total?got/total:Math.min(.9,got/1e7)));
+  status('Duke përgatitur rrjetin…','',1); await nextFrame();
+  const g=decodeGraph(await gunzip(bytes));
+  if (mode==='car'){ g.car=g.spd; g.walk=new Uint8Array(g.M); } else { g.walk=g.spd; g.car=new Uint8Array(g.M); }
+  return graphs[mode]=prepare(g);
 }
-async function download(q, what, approx){
-  status('Duke shkarkuar '+what+' nga OpenStreetMap…', 'Vetëm herën e parë – më pas ruhen në pajisje.', 0.02);
-  const t0=performance.now();
-  const js = await overpass(q, got => status('Duke shkarkuar '+what+' nga OpenStreetMap…',
-      (got/1e6).toFixed(1)+' MB · '+Math.round((performance.now()-t0)/1000)+' s', Math.min(.95, got/approx)));
-  status('Duke ndërtuar rrjetin rrugor…', js.elements.length.toLocaleString('sq')+' elemente OSM', .97);
-  await nextFrame();
-  return buildGraph(js);
-}
-async function loadPlaces(force){
-  let e = force ? null : await idb.get('places');
-  if (!e || Date.now()-e.time > CACHE_DAYS*864e5){
-    status('Duke shkarkuar vendbanimet…', '', 0.1);
-    const js = await overpass(PLACE_Q);
-    const pl = js.elements.map(n=>{
-      const t=n.tags; let pop=parseInt(String(t.population||'').replace(/[.,\s]/g,''))||0;
-      return {n:t['name:sq']||t.name, p:t.place, lon:n.lon, lat:n.lat, pop};
-    }).filter(p=>insideKosovo(p.lon,p.lat));
-    const rank={city:0,town:1,village:2};
-    pl.sort((a,b)=>rank[a.p]-rank[b.p] || b.pop-a.pop || a.n.localeCompare(b.n));
-    e={time:Date.now(), pl}; idb.set('places', e);
-  }
-  PLACES = e.pl;
+async function loadPlaces(){
+  const r=await fetch(DATA+'places.json'); if (!r.ok) throw new Error('HTTP '+r.status);
+  PLACES=await r.json();
   for (const p of PLACES){ const [x,y]=merc(p.lon,p.lat); p._x=x; p._y=y; }
+  try{ const m=await fetch(DATA+'meta.json'); if (m.ok){ const j=await m.json(); document.getElementById('osmDate').textContent=' (gjendja: '+j.osm_date+')'; } }catch(e){}
 }
 function insideKosovo(x,y){
   let inside=false; const r=BORDER[0];
@@ -696,18 +541,17 @@ playBtn.onclick=()=>playing?stop():play();
 document.getElementById('reset').onclick=()=>{ stop(); setT(0); };
 slider.oninput=()=>{ stop(); setT(slider.value/1000*MODES[mode].max*60, true); };
 
-async function run(force){
+async function run(){
   if (busy || !origin) return;
   busy=true; stop();
   try{
-    const [lon,lat]=[origin.lon,origin.lat];
-    G = await getGraph(mode, lat, lon, force);
+    G = await getGraph(mode);
     status('Duke llogaritur kohët e udhëtimit…', '', null); await nextFrame();
     compute(); hideStatus();
     T=0; redrawBase(); rebuildActive(); setT(0); play();
   }catch(e){
     console.error(e);
-    status('Nuk u arrit të merren të dhënat nga OpenStreetMap.', 'Serverat Overpass mund të jenë të ngarkuar. Provo pas pak. ('+(e.message||e)+')', null);
+    status('Nuk u arrit të ngarkohen të dhënat.', 'Kontrollo lidhjen me internetin dhe provo përsëri. ('+(e.message||e)+')', null);
     retry.hidden=false;
   }finally{ busy=false; }
 }
@@ -743,12 +587,6 @@ originIn.addEventListener('change',()=>{
 document.getElementById('toggle').onclick=()=>{
   const pnl=document.getElementById('panel'); pnl.classList.toggle('collapsed');
   document.getElementById('toggle').textContent=pnl.classList.contains('collapsed')?'Cilësimet ▴':'Cilësimet ▾';
-};
-document.getElementById('refresh').onclick=async()=>{
-  if (busy) return;
-  await idb.clear(); delete graphs.car; delete graphs.walk;
-  try{ await loadPlaces(true); fillPlaceList(); }catch(e){}
-  run(true);
 };
 map.on('move zoom',()=>{ view(); redrawBase(); drawFront(); });
 map.on('resize',()=>{ resize(); redrawBase(); drawFront(); });

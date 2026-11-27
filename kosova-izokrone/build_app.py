@@ -1,11 +1,9 @@
-"""Inject the Kosovo border into app.html -> ../kosova-izokrone.html"""
-import json, os
-from shapely.geometry import Polygon
+"""Inject the Kosovo border into app.html -> <out> (default: dist/index.html)"""
+import json, os, sys
 here = os.path.dirname(os.path.abspath(__file__))
+out = sys.argv[1] if len(sys.argv) > 1 else os.path.join(here, 'dist', 'index.html')
 border = json.load(open(os.path.join(here, 'border.json')))
-q = Polygon(border[0]).buffer(0.01).simplify(0.01)
-qpoly = [[round(x, 3), round(y, 3)] for x, y in q.exterior.coords]
 html = open(os.path.join(here, 'app.html'), encoding='utf-8').read()
 html = html.replace('__BORDER__', json.dumps(border, separators=(',', ':')))
-html = html.replace('__QPOLY__', json.dumps(qpoly, separators=(',', ':')))
-open(os.path.join(here, '..', 'kosova-izokrone.html'), 'w', encoding='utf-8').write(html)
+os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
+open(out, 'w', encoding='utf-8').write(html)
