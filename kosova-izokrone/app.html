@@ -1,0 +1,608 @@
+<!doctype html>
+<html lang="sq">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b1626">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Sa larg?">
+<title>Sa larg arrin në Kosovë</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+:root{
+  --bg:#0b1626;--panel:rgba(14,27,46,.93);--line:#29415f;--text:#eef5ff;--muted:#9db4cf;
+  --accent:#ffb703;--btn:#16304f;--btn-on:#2a5a8c;
+  font:15px/1.4 "Segoe UI",system-ui,-apple-system,sans-serif;color:var(--text);
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);overflow:hidden}
+#map{position:absolute;inset:0;background:var(--bg)}
+canvas.ov{position:absolute;left:0;top:0;pointer-events:none}
+#base{z-index:410}#front{z-index:420}
+.leaflet-container{background:var(--bg);font:inherit}
+.leaflet-control-attribution{background:rgba(11,22,38,.75)!important;color:#7f96b3!important;font-size:11px}
+.leaflet-control-attribution a{color:#a9c7ea!important}
+.leaflet-bar a{background:#14273f;color:#dce9f8;border-color:var(--line)}
+.leaflet-bar a:hover{background:#1c3656}
+
+#bar{position:absolute;z-index:1000;top:calc(10px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);
+  width:min(920px,calc(100% - 24px));background:var(--panel);border:1px solid var(--line);
+  border-radius:12px;padding:10px 14px 8px;backdrop-filter:blur(6px);box-shadow:0 6px 24px rgba(0,0,0,.35)}
+#bar h1{margin:0 0 6px;font-size:15px;font-weight:600;text-align:center;color:#dbe8f8}
+#bar h1 b{color:var(--accent)}
+.row{display:flex;align-items:center;gap:10px}
+.ctl{display:flex;gap:6px}
+button{font:inherit;background:var(--btn);color:var(--text);border:1px solid #35587e;border-radius:7px;
+  padding:6px 10px;cursor:pointer;min-width:36px}
+button:hover{border-color:#6f9fd3}
+button[aria-pressed=true]{background:var(--btn-on);border-color:#8cc0ff}
+button:disabled{opacity:.5;cursor:default}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #a8d9ff;outline-offset:2px}
+#trackwrap{flex:1;position:relative;padding:4px 0 16px;min-width:0}
+#slider{width:100%;margin:0;accent-color:var(--accent);cursor:pointer}
+#ticks{position:absolute;left:8px;right:8px;bottom:0;height:14px;font-size:11px;color:var(--muted)}
+#ticks span{position:absolute;transform:translateX(-50%)}
+#clock{font:600 22px/1 ui-monospace,"Cascadia Mono",Consolas,monospace;background:#26384f;color:#fff;
+  padding:7px 10px;border-radius:8px;min-width:86px;text-align:center}
+
+#panel{position:absolute;z-index:1000;left:12px;top:122px;width:300px;max-height:calc(100% - 150px);
+  overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;
+  box-shadow:0 6px 24px rgba(0,0,0,.35)}
+#panel h2{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:12px 0 6px;font-weight:600}
+#panel h2:first-of-type{margin-top:0}
+.modes{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.modes button{padding:9px 6px;font-size:15px}
+#origin{width:100%;font:inherit;background:#0f2038;color:var(--text);border:1px solid #35587e;border-radius:7px;padding:7px 9px}
+.hint{font-size:12px;color:var(--muted);margin:6px 0 0}
+#legend{height:10px;border-radius:5px;margin-top:4px}
+#legendTicks{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:3px}
+#stats{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+#stats div{background:#0f2038;border:1px solid #233b59;border-radius:8px;padding:6px 8px}
+#stats b{display:block;font-size:18px;font-variant-numeric:tabular-nums}
+#stats small{color:var(--muted);font-size:11px}
+#reached{list-style:none;margin:0;padding:0;font-size:13px}
+#reached li{display:flex;justify-content:space-between;gap:8px;padding:3px 0;border-bottom:1px solid #1c3150;color:#5d7594}
+#reached li.on{color:var(--text)}
+#reached li span:last-child{font-variant-numeric:tabular-nums}
+#speedSel{font:inherit;background:var(--btn);color:var(--text);border:1px solid #35587e;border-radius:7px;padding:5px}
+#toggle{display:none}
+.src{font-size:11px;color:#7f96b3;margin-top:10px}
+.src a{color:#a9c7ea}
+#status{position:absolute;z-index:1100;left:50%;top:50%;transform:translate(-50%,-50%);width:min(380px,calc(100% - 40px));
+  background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px;text-align:center;
+  box-shadow:0 10px 40px rgba(0,0,0,.5)}
+#status[hidden]{display:none}
+#status p{margin:0 0 10px;color:#dbe8f8}
+#status small{color:var(--muted)}
+#prog{height:6px;background:#0f2038;border-radius:3px;overflow:hidden;margin:6px 0}
+#prog i{display:block;height:100%;width:0;background:var(--accent);transition:width .2s}
+#status button{margin-top:10px}
+
+@media (max-width:760px){
+  #bar{padding:8px 10px 6px;width:calc(100% - 16px)}
+  #bar h1{font-size:13px}
+  #clock{font-size:17px;min-width:62px;padding:6px 7px}
+  .ctl button{padding:5px 8px;min-width:32px}
+  #speedSel{display:none}
+  #panel{left:8px;right:8px;width:auto;top:auto;bottom:calc(8px + env(safe-area-inset-bottom));max-height:48%;padding:10px 12px}
+  #panel.collapsed .body{display:none}
+  #toggle{display:block;width:100%;margin-bottom:8px}
+  .leaflet-bottom.leaflet-right{bottom:auto;top:120px}
+}
+</style>
+</head>
+<body>
+<div id="map"></div>
+<canvas id="base" class="ov"></canvas>
+<canvas id="front" class="ov"></canvas>
+
+<div id="bar">
+  <h1>Sa larg mund të shkosh <b id="tMode">me makinë</b> nga <b id="tCity">…</b>?</h1>
+  <div class="row">
+    <div class="ctl">
+      <button id="play" aria-label="Luaj ose pauzo" title="Luaj / pauzë">▶</button>
+      <button id="reset" aria-label="Rifillo" title="Rifillo">■</button>
+      <select id="speedSel" aria-label="Shpejtësia e animacionit">
+        <option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="4">4×</option>
+      </select>
+    </div>
+    <div id="trackwrap">
+      <input id="slider" type="range" min="0" max="1000" value="0" step="1" aria-label="Koha e udhëtimit">
+      <div id="ticks"></div>
+    </div>
+    <div id="clock">00:00</div>
+  </div>
+</div>
+
+<div id="panel">
+  <button id="toggle">Cilësimet ▾</button>
+  <div class="body">
+    <h2>Mënyra</h2>
+    <div class="modes">
+      <button id="mCar" aria-pressed="true">🚗 Me makinë</button>
+      <button id="mWalk" aria-pressed="false">🚶 Në këmbë</button>
+    </div>
+    <h2>Pika e nisjes</h2>
+    <input id="origin" list="placeList" placeholder="Kërko qytet ose fshat…" autocomplete="off">
+    <datalist id="placeList"></datalist>
+    <p class="hint">Ose kliko kudo në hartë.</p>
+    <h2>Koha</h2>
+    <div id="legend"></div>
+    <div id="legendTicks"></div>
+    <h2>Arritshmëria</h2>
+    <div id="stats">
+      <div><b id="sKm">0</b><small>km rrugë të arritura</small></div>
+      <div><b id="sPl">0</b><small>vendbanime të arritura</small></div>
+    </div>
+    <h2>Qytetet</h2>
+    <ul id="reached"></ul>
+    <p class="src">Të dhënat: © kontribuesit e <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a><span id="osmDate"></span>.
+      Kohët janë vlerësime nga klasa e rrugës ose <i>maxspeed</i> (makinë) dhe 5 km/h (në këmbë), pa trafik.</p>
+  </div>
+</div>
+
+<div id="status" hidden>
+  <p id="stMsg">Duke shkarkuar rrugët nga OpenStreetMap…</p>
+  <div id="prog"><i></i></div>
+  <small id="stSub"></small>
+  <div><button id="stRetry" hidden>Provo përsëri</button></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+"use strict";
+const BORDER = __BORDER__;
+const DATA = 'data/';
+const MODES = {
+  car:  {label:'me makinë', max:180, ticks:[0,30,60,90,120,150,180], dur:22},
+  walk: {label:'në këmbë',  max:720, ticks:[0,120,240,360,480,600,720], dur:26}
+};
+const PAL = ['#fff6c2','#ffd166','#ffa43a','#fb6b2e','#f0306a','#c2268f','#8a2fc9','#4f4fd9','#2f7be6','#2fb3e6'];
+const NB = 40;
+
+/* ---------------- data (precomputed from OSM by GitHub Actions) ---------------- */
+const RAD=Math.PI/180;
+function hav(lo1,la1,lo2,la2){
+  const p1=la1*RAD,p2=la2*RAD,dp=p2-p1,dl=(lo2-lo1)*RAD;
+  const a=Math.sin(dp/2)**2+Math.cos(p1)*Math.cos(p2)*Math.sin(dl/2)**2;
+  return 2*6371008.8*Math.asin(Math.sqrt(a));
+}
+
+/* ---------------- status UI ---------------- */
+const st=document.getElementById('status'), stMsg=document.getElementById('stMsg'), stSub=document.getElementById('stSub');
+const progI=document.querySelector('#prog i'), retry=document.getElementById('stRetry');
+function status(msg, sub, frac){
+  st.hidden=false; retry.hidden=true; stMsg.textContent=msg; stSub.textContent=sub||'';
+  document.getElementById('prog').style.display = frac==null ? 'none' : '';
+  if (frac!=null) progI.style.width = Math.round(Math.min(1,frac)*100)+'%';
+}
+const hideStatus=()=>{ st.hidden=true; };
+const nextFrame=()=>new Promise(r=>requestAnimationFrame(()=>setTimeout(r,0)));
+
+async function fetchBytes(url, onProgress){
+  const r=await fetch(url);
+  if (!r.ok) throw new Error('HTTP '+r.status+' '+url);
+  const total=+r.headers.get('content-length')||0;
+  if (!r.body || !r.body.getReader) return new Uint8Array(await r.arrayBuffer());
+  const reader=r.body.getReader(), chunks=[]; let got=0;
+  for(;;){ const {done,value}=await reader.read(); if (done) break; chunks.push(value); got+=value.length; onProgress&&onProgress(got,total); }
+  const buf=new Uint8Array(got); let o=0; for (const c of chunks){ buf.set(c,o); o+=c.length; }
+  return buf;
+}
+async function gunzip(bytes){
+  if (bytes[0]!==0x1f || bytes[1]!==0x8b) return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset+bytes.byteLength); // server already decoded it
+  return await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();
+}
+function decodeGraph(ab){
+  const dv=new DataView(ab);
+  if (String.fromCharCode(...new Uint8Array(ab,0,4))!=='KXG2') throw new Error('Format i panjohur i të dhënave');
+  const N=dv.getUint32(4,true), M=dv.getUint32(8,true), P=dv.getUint32(12,true);
+  let o=16;
+  const i32=n=>{ const a=new Int32Array(ab,o,n); o+=4*n; return a; };
+  const lon=i32(N), lat=i32(N);
+  const u=new Uint32Array(ab,o,M); o+=4*M;
+  const v=new Uint32Array(ab,o,M); o+=4*M;
+  const len=new Float32Array(ab,o,M); o+=4*M;
+  const spd=new Uint8Array(ab,o,M); o+=M;
+  const cls=new Uint8Array(ab,o,M); o+=M;
+  const dir=new Uint8Array(ab,o,M); o+=M;
+  o+=(4-o%4)%4;
+  const ps=new Uint32Array(ab,o,M+1); o+=4*(M+1);
+  const plon=i32(P), plat=i32(P);
+  const f=a=>{ const r=new Float64Array(a.length); for (let i=0;i<a.length;i++) r[i]=a[i]/1e5; return r; };
+  return {N,M,lon:f(lon),lat:f(lat),u,v,len,spd,cls,dir,ps,plon:f(plon),plat:f(plat)};
+}
+
+const graphs={};
+let PLACES=[];
+async function getGraph(mode){
+  if (graphs[mode]) return graphs[mode];
+  const what = mode==='car' ? 'rrjeti rrugor për makina' : 'rrugët dhe shtigjet për këmbësorë';
+  status('Duke ngarkuar '+what+'…','',0.02);
+  const bytes=await fetchBytes(DATA+mode+'.bin.gz', (got,total)=>status('Duke ngarkuar '+what+'…',
+    (got/1e6).toFixed(1)+(total?' / '+(total/1e6).toFixed(1):'')+' MB', total?got/total:Math.min(.9,got/1e7)));
+  status('Duke përgatitur rrjetin…','',1); await nextFrame();
+  const g=decodeGraph(await gunzip(bytes));
+  if (mode==='car'){ g.car=g.spd; g.walk=new Uint8Array(g.M); } else { g.walk=g.spd; g.car=new Uint8Array(g.M); }
+  return graphs[mode]=prepare(g);
+}
+async function loadPlaces(){
+  const r=await fetch(DATA+'places.json'); if (!r.ok) throw new Error('HTTP '+r.status);
+  PLACES=await r.json();
+  for (const p of PLACES){ const [x,y]=merc(p.lon,p.lat); p._x=x; p._y=y; }
+  try{ const m=await fetch(DATA+'meta.json'); if (m.ok){ const j=await m.json(); document.getElementById('osmDate').textContent=' (gjendja: '+j.osm_date+')'; } }catch(e){}
+}
+function insideKosovo(x,y){
+  let inside=false; const r=BORDER[0];
+  for (let i=0,j=r.length-1;i<r.length;j=i++){
+    const [xi,yi]=r[i],[xj,yj]=r[j];
+    if ((yi>y)!==(yj>y) && x<(xj-xi)*(y-yi)/(yj-yi)+xi) inside=!inside;
+  }
+  return inside;
+}
+
+/* ---------------- projected graph + routing ---------------- */
+function merc(lon,lat){ const s=Math.sin(lat*RAD); return [(lon+180)/360*256, (0.5-Math.log((1+s)/(1-s))/(4*Math.PI))*256]; }
+function prepare(g){
+  if (g.nx) return g;
+  g.nx=new Float64Array(g.N); g.ny=new Float64Array(g.N);
+  for (let i=0;i<g.N;i++){ const [x,y]=merc(g.lon[i],g.lat[i]); g.nx[i]=x; g.ny[i]=y; }
+  const P=g.plon.length; g.px=new Float64Array(P); g.py=new Float64Array(P);
+  for (let i=0;i<P;i++){ const [x,y]=merc(g.plon[i],g.plat[i]); g.px[i]=x; g.py[i]=y; }
+  g.adj={};
+  return g;
+}
+function adjacency(g, mode){
+  if (g.adj[mode]) return g.adj[mode];
+  const sp = mode==='car' ? g.car : g.walk, k = mode==='car' ? 3.6 : 36;
+  const directed = mode==='car';
+  const deg=new Uint32Array(g.N+1), ew=new Float32Array(g.M), ok=new Uint8Array(g.N);
+  const fw = e => !directed || g.dir[e]!==2, bw = e => !directed || g.dir[e]!==1;
+  for (let e=0;e<g.M;e++) if (sp[e]){ if (fw(e)) deg[g.u[e]+1]++; if (bw(e)) deg[g.v[e]+1]++; }
+  for (let i=0;i<g.N;i++) deg[i+1]+=deg[i];
+  const to=new Uint32Array(deg[g.N]), w=new Float32Array(deg[g.N]), fill=deg.slice(0,g.N);
+  for (let e=0;e<g.M;e++) if (sp[e]){
+    const t=g.len[e]/(sp[e]/k); ew[e]=t; const u=g.u[e], v=g.v[e];
+    if (fw(e)){ to[fill[u]]=v; w[fill[u]++]=t; }
+    if (bw(e)){ to[fill[v]]=u; w[fill[v]++]=t; }
+    ok[u]=ok[v]=1;
+  }
+  return g.adj[mode]={start:deg,to,w,ok,ew,sp,directed};
+}
+function dijkstra(g, adj, src){
+  const dist=new Float32Array(g.N).fill(Infinity);
+  let hd=new Float64Array(4096), hn=new Uint32Array(4096), hs=0;
+  const push=(d,n)=>{
+    if (hs===hd.length){ const a=new Float64Array(hs*2); a.set(hd); hd=a; const b=new Uint32Array(hs*2); b.set(hn); hn=b; }
+    let i=hs++; while(i>0){ const p=(i-1)>>1; if (hd[p]<=d) break; hd[i]=hd[p]; hn[i]=hn[p]; i=p; } hd[i]=d; hn[i]=n;
+  };
+  const pop=()=>{
+    const n=hn[0], d=hd[--hs], m=hn[hs]; let i=0;
+    for(;;){ let c=2*i+1; if (c>=hs) break; if (c+1<hs&&hd[c+1]<hd[c]) c++; if (hd[c]>=d) break; hd[i]=hd[c]; hn[i]=hn[c]; i=c; }
+    hd[i]=d; hn[i]=m; return n;
+  };
+  dist[src]=0; push(0,src);
+  const {start,to,w}=adj;
+  while(hs){
+    const d=hd[0], u=pop(); if (d>dist[u]) continue;
+    for (let j=start[u]; j<start[u+1]; j++){ const v=to[j], nd=d+w[j]; if (nd<dist[v]){ dist[v]=nd; push(nd,v); } }
+  }
+  return dist;
+}
+// nearest node, preferring nodes on the largest connected part (avoid isolated fragments)
+const CELL=0.01; // ≈1.1 km in zoom-0 Mercator units at Kosovo's latitude
+function nodeGrid(g, ok){
+  if (ok._grid) return ok._grid;
+  const m=new Map();
+  for (let i=0;i<g.N;i++) if (ok[i]){
+    const k=Math.floor(g.nx[i]/CELL)+','+Math.floor(g.ny[i]/CELL);
+    let a=m.get(k); if (!a) m.set(k,a=[]); a.push(i);
+  }
+  return ok._grid=m;
+}
+function nearestNode(g, x, y, ok){
+  const grid=nodeGrid(g,ok), cx=Math.floor(x/CELL), cy=Math.floor(y/CELL);
+  let best=-1, bd=Infinity;
+  for (let r=0;r<=40;r++){
+    for (let i=cx-r;i<=cx+r;i++) for (let j=cy-r;j<=cy+r;j++){
+      if (Math.max(Math.abs(i-cx),Math.abs(j-cy))!==r) continue;
+      const a=grid.get(i+','+j); if (!a) continue;
+      for (const n of a){ const dx=g.nx[n]-x, dy=g.ny[n]-y, d=dx*dx+dy*dy; if (d<bd){bd=d;best=n;} }
+    }
+    if (best>=0 && Math.sqrt(bd) < r*CELL) break;
+  }
+  return best;
+}
+
+/* ---------------- map + canvases ---------------- */
+const map = L.map('map',{zoomAnimation:false, minZoom:7, maxZoom:17}).setView([42.6,20.9],9);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png',{
+  subdomains:'abcd', maxZoom:19,
+  attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> © <a href="https://carto.com/attributions">CARTO</a>'
+}).addTo(map);
+map.zoomControl.setPosition('bottomright');
+const ring = BORDER.map(r=>r.map(([x,y])=>[y,x]));
+L.polygon([[[89,-179],[89,179],[-89,179],[-89,-179]], ...ring],{stroke:false,fillColor:'#050b14',fillOpacity:.55,interactive:false}).addTo(map);
+L.polygon(ring,{color:'#7fa6d4',weight:1.2,opacity:.7,fill:false,interactive:false}).addTo(map);
+map.fitBounds(L.polygon(ring[0]).getBounds(),{padding:[10,10]});
+
+const base=document.getElementById('base'), front=document.getElementById('front');
+const bctx=base.getContext('2d'), fctx=front.getContext('2d');
+let dpr=1,W=0,H=0,scale=1,ox=0,oy=0;
+function resize(){
+  dpr=Math.min(window.devicePixelRatio||1,2);
+  const s=map.getSize(); W=s.x; H=s.y;
+  for (const c of [base,front]){ c.width=W*dpr; c.height=H*dpr; c.style.width=W+'px'; c.style.height=H+'px'; }
+  view();
+}
+function view(){
+  const z=map.getZoom(); scale=Math.pow(2,z);
+  const tl=map.project(map.containerPointToLatLng([0,0]),z); ox=tl.x; oy=tl.y;
+}
+const bucketColors=[];
+(function(){
+  const rgb=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16));
+  for (let b=0;b<NB;b++){
+    const f=b/(NB-1)*(PAL.length-1), i=Math.min(PAL.length-2,Math.floor(f)), r=f-i, a=rgb(PAL[i]), c=rgb(PAL[i+1]);
+    bucketColors.push('rgb('+a.map((v,k)=>Math.round(v+(c[k]-v)*r)).join(',')+')');
+  }
+})();
+function widthFor(level, z){ // level 0 minor, 1 medium, 2 major
+  const w = z<=8?0.6 : z<=10?0.9 : z<=12?1.3 : z<=14?2 : 3;
+  return level===2 ? w*2.2 : level===1 ? w*1.5 : w;
+}
+const levelOf = c => c<3 ? 2 : c<5 ? 1 : 0;
+
+/* ---------------- state ---------------- */
+let mode='car', origin=null, G=null, A=null, dist=null, T=0, playing=false;
+let order=null, byMin=null, tU=null, tV=null, tFull=null, tMin=null, cumKm=null, drawn=0, activePtr=0, active=[];
+let busy=false;
+
+function strokeEdge(ctx,e){
+  const k=scale*dpr, ax=ox*dpr, ay=oy*dpr;
+  ctx.moveTo(G.nx[G.u[e]]*k-ax, G.ny[G.u[e]]*k-ay);
+  for (let j=G.ps[e]; j<G.ps[e+1]; j++) ctx.lineTo(G.px[j]*k-ax, G.py[j]*k-ay);
+  ctx.lineTo(G.nx[G.v[e]]*k-ax, G.ny[G.v[e]]*k-ay);
+}
+function drawRange(a,b){
+  if (b<=a) return;
+  const max=MODES[mode].max*60, z=map.getZoom();
+  bctx.lineCap='round'; bctx.lineJoin='round';
+  const bk=e=>Math.min(NB-1, Math.floor(tFull[e]/max*NB));
+  for (let pass=0;pass<3;pass++){
+    let i=a;
+    while(i<b){
+      const k0=bk(order[i]); let j=i, any=false;
+      bctx.beginPath();
+      for (; j<b; j++){ const e=order[j]; if (bk(e)!==k0) break; if (levelOf(G.cls[e])===pass){ strokeEdge(bctx,e); any=true; } }
+      if (any){ bctx.strokeStyle=bucketColors[k0]; bctx.lineWidth=widthFor(pass,z)*dpr; bctx.stroke(); }
+      i=j;
+    }
+  }
+}
+function edgePts(e, rev){
+  const xs=[G.nx[G.u[e]]], ys=[G.ny[G.u[e]]];
+  for (let j=G.ps[e]; j<G.ps[e+1]; j++){ xs.push(G.px[j]); ys.push(G.py[j]); }
+  xs.push(G.nx[G.v[e]]); ys.push(G.ny[G.v[e]]);
+  if (rev){ xs.reverse(); ys.reverse(); }
+  return [xs,ys];
+}
+function strokePartial(ctx,e,f,rev){
+  if (f<=0) return; f=Math.min(1,f);
+  const k=scale*dpr, ax=ox*dpr, ay=oy*dpr, [xs,ys]=edgePts(e,rev);
+  let L=0; for (let i=1;i<xs.length;i++) L+=Math.hypot(xs[i]-xs[i-1],ys[i]-ys[i-1]);
+  const target=L*f; let acc=0;
+  ctx.moveTo(xs[0]*k-ax, ys[0]*k-ay);
+  for (let i=1;i<xs.length;i++){
+    const d=Math.hypot(xs[i]-xs[i-1],ys[i]-ys[i-1]);
+    if (acc+d>=target){ const r=d?(target-acc)/d:0; ctx.lineTo((xs[i-1]+(xs[i]-xs[i-1])*r)*k-ax,(ys[i-1]+(ys[i]-ys[i-1])*r)*k-ay); return; }
+    ctx.lineTo(xs[i]*k-ax, ys[i]*k-ay); acc+=d;
+  }
+}
+function redrawBase(){ bctx.clearRect(0,0,base.width,base.height); drawn=0; advanceBase(); }
+function advanceBase(){
+  if (!order) return;
+  let b=drawn; while (b<order.length && tFull[order[b]]<=T) b++;
+  drawRange(drawn,b); drawn=b;
+}
+function rebuildActive(){
+  active=[]; activePtr=0;
+  if (!byMin) return;
+  while (activePtr<byMin.length && tMin[byMin[activePtr]]<=T){ const e=byMin[activePtr++]; if (tFull[e]>T) active.push(e); }
+}
+function drawFront(){
+  fctx.clearRect(0,0,front.width,front.height);
+  if (order){
+    while (activePtr<byMin.length && tMin[byMin[activePtr]]<=T) active.push(byMin[activePtr++]);
+    active = active.filter(e=>tFull[e]>T);
+    const z=map.getZoom();
+    fctx.lineCap='round'; fctx.beginPath();
+    for (const e of active){
+      const w=A.ew[e], d=A.directed?G.dir[e]:0;
+      if (d!==2 && tU[e]<=T) strokePartial(fctx,e,(T-tU[e])/w,false);
+      if (d!==1 && tV[e]<=T) strokePartial(fctx,e,(T-tV[e])/w,true);
+    }
+    fctx.strokeStyle='rgba(255,255,255,.95)'; fctx.lineWidth=widthFor(1,z)*1.3*dpr;
+    fctx.shadowColor='rgba(255,240,200,.9)'; fctx.shadowBlur=6*dpr; fctx.stroke(); fctx.shadowBlur=0;
+  }
+  drawPlaces();
+}
+function drawPlaces(){
+  const z=map.getZoom(), k=scale*dpr, ax=ox*dpr, ay=oy*dpr;
+  fctx.font=`600 ${12*dpr}px "Segoe UI",system-ui,sans-serif`; fctx.textBaseline='middle';
+  for (const p of PLACES){
+    if (p.p==='village' && z<11) continue;
+    const x=p._x*k-ax, y=p._y*k-ay;
+    if (x<-60||y<-20||x>W*dpr+60||y>H*dpr+20) continue;
+    const t=p.t===undefined?Infinity:p.t, on=t<=T, big=p.p==='city';
+    fctx.beginPath(); fctx.arc(x,y,(big?3.5:p.p==='town'?2.8:2)*dpr,0,7);
+    fctx.fillStyle=on?'#fff':'rgba(150,170,200,.55)'; fctx.fill();
+    if (z>=9 || big){
+      const label=p.n+(on&&t>30?'  '+fmt(t):'');
+      fctx.lineWidth=3*dpr; fctx.strokeStyle='rgba(5,12,22,.85)'; fctx.strokeText(label,x+6*dpr,y);
+      fctx.fillStyle=on?'#fff':'rgba(170,190,215,.6)'; fctx.fillText(label,x+6*dpr,y);
+    }
+  }
+  if (origin){
+    const x=origin.x*k-ax, y=origin.y*k-ay;
+    fctx.beginPath(); fctx.arc(x,y,7*dpr,0,7); fctx.lineWidth=3*dpr; fctx.strokeStyle='#fff'; fctx.stroke();
+    fctx.beginPath(); fctx.arc(x,y,3*dpr,0,7); fctx.fillStyle='#ffb703'; fctx.fill();
+  }
+}
+const fmt=sec=>{ const m=Math.round(sec/60), h=Math.floor(m/60); return h?`${h}h${String(m%60).padStart(2,'0')}`:`${m}′`; };
+const pad2=v=>String(v).padStart(2,'0');
+
+/* ---------------- compute ---------------- */
+function compute(){
+  A=adjacency(G,mode);
+  const src=nearestNode(G,origin.x,origin.y,A.ok);
+  if (src<0){ order=null; return; }
+  dist=dijkstra(G,A,src);
+  // time to walk from the clicked point to the network (offset)
+  const off=metersBetween(origin.x,origin.y,G.nx[src],G.ny[src])/(5/3.6);
+  for (let i=0;i<G.N;i++) dist[i]+=off;
+  const max=MODES[mode].max*60, M=G.M;
+  tU=new Float32Array(M); tV=new Float32Array(M); tFull=new Float32Array(M); tMin=new Float32Array(M);
+  const keep=[];
+  for (let e=0;e<M;e++){
+    if (!A.sp[e]) continue;
+    const a=dist[G.u[e]], b=dist[G.v[e]], w=A.ew[e], d=A.directed?G.dir[e]:0;
+    let tm, tf;
+    if (d===1){ if (!isFinite(a)) continue; tm=a; tf=a+w; }
+    else if (d===2){ if (!isFinite(b)) continue; tm=b; tf=b+w; }
+    else { if (!isFinite(a)&&!isFinite(b)) continue; tm=Math.min(a,b); tf=(isFinite(a)&&isFinite(b))?Math.min(Math.max(a,b),(a+b+w)/2):tm+w; }
+    tU[e]=a; tV[e]=b; tMin[e]=tm; tFull[e]=tf;
+    if (tm<=max) keep.push(e);
+  }
+  order=Uint32Array.from(keep).sort((x,y)=>tFull[x]-tFull[y]);
+  byMin=Uint32Array.from(keep).sort((x,y)=>tMin[x]-tMin[y]);
+  cumKm=new Float64Array(order.length+1);
+  for (let i=0;i<order.length;i++) cumKm[i+1]=cumKm[i]+G.len[order[i]]/1000;
+  // settlements
+  const sp=mode==='car'?30/3.6:5/3.6;
+  for (const p of PLACES){
+    // only places covered by the loaded data
+    const n=nearestNode(G,p._x,p._y,A.ok);
+    const dm = n<0?Infinity:metersBetween(p._x,p._y,G.nx[n],G.ny[n]);
+    p.t = dm>3000 ? Infinity : dist[n] + dm*1.3/sp;
+  }
+  buildCityList();
+}
+function metersBetween(x1,y1,x2,y2){ return Math.hypot(x2-x1,y2-y1)*40075016.7/256*Math.cos(42.6*RAD); }
+
+/* ---------------- UI ---------------- */
+const slider=document.getElementById('slider'), clock=document.getElementById('clock'), playBtn=document.getElementById('play');
+function setT(t, fromSlider){
+  const back=t<T; T=Math.max(0,Math.min(t,MODES[mode].max*60));
+  if (back){ redrawBase(); rebuildActive(); } else advanceBase();
+  drawFront();
+  const mins=Math.floor(T/60); clock.textContent=`${pad2(Math.floor(mins/60))}:${pad2(mins%60)}`;
+  if (!fromSlider) slider.value=Math.round(T/(MODES[mode].max*60)*1000);
+  updateStats();
+}
+let cityLis=[];
+function buildCityList(){
+  const ul=document.getElementById('reached'); ul.innerHTML='';
+  cityLis=PLACES.filter(p=>p.p!=='village' && isFinite(p.t)).sort((a,b)=>a.t-b.t).map(p=>{
+    const li=document.createElement('li'); const a=document.createElement('span'), b=document.createElement('span');
+    a.textContent=p.n; b.textContent=fmt(p.t); li.append(a,b); ul.appendChild(li); return {el:li,t:p.t};
+  });
+}
+function updateStats(){
+  if (!order) return;
+  let lo=0,hi=order.length; while(lo<hi){ const m=(lo+hi)>>1; if (tFull[order[m]]<=T) lo=m+1; else hi=m; }
+  document.getElementById('sKm').textContent=Math.round(cumKm[lo]).toLocaleString('sq');
+  let n=0; for (const p of PLACES) if (p.t<=T) n++;
+  document.getElementById('sPl').textContent=n.toLocaleString('sq');
+  for (const li of cityLis) li.el.classList.toggle('on', li.t<=T);
+}
+function setTicks(){
+  const m=MODES[mode], el=document.getElementById('ticks'); el.innerHTML='';
+  for (const t of m.ticks){ const s=document.createElement('span'); s.style.left=(t/m.max*100)+'%'; s.textContent=`${t/60}h`; el.appendChild(s); }
+  const lt=document.getElementById('legendTicks'); lt.innerHTML='';
+  [0,.25,.5,.75,1].forEach(f=>{ const s=document.createElement('span'); s.textContent=f?fmt(f*m.max*60):'0'; lt.appendChild(s); });
+  document.getElementById('legend').style.background=`linear-gradient(90deg,${PAL.join(',')})`;
+  document.getElementById('tMode').textContent=m.label;
+}
+let last=0, raf=0;
+function loop(ts){
+  if (!playing) return;
+  const dt=last?(ts-last)/1000:0; last=ts;
+  const m=MODES[mode], sp=+document.getElementById('speedSel').value;
+  setT(T+Math.min(dt,.1)*(m.max*60/m.dur)*sp);
+  if (T>=m.max*60){ stop(); return; }
+  raf=requestAnimationFrame(loop);
+}
+function play(){ if (!order) return; if (T>=MODES[mode].max*60) setT(0); playing=true; last=0; playBtn.textContent='❚❚'; raf=requestAnimationFrame(loop); }
+function stop(){ playing=false; cancelAnimationFrame(raf); playBtn.textContent='▶'; }
+playBtn.onclick=()=>playing?stop():play();
+document.getElementById('reset').onclick=()=>{ stop(); setT(0); };
+slider.oninput=()=>{ stop(); setT(slider.value/1000*MODES[mode].max*60, true); };
+
+async function run(){
+  if (busy || !origin) return;
+  busy=true; stop();
+  try{
+    G = await getGraph(mode);
+    status('Duke llogaritur kohët e udhëtimit…', '', null); await nextFrame();
+    compute(); hideStatus();
+    T=0; redrawBase(); rebuildActive(); setT(0); play();
+  }catch(e){
+    console.error(e);
+    status('Nuk u arrit të ngarkohen të dhënat.', 'Kontrollo lidhjen me internetin dhe provo përsëri. ('+(e.message||e)+')', null);
+    retry.hidden=false;
+  }finally{ busy=false; }
+}
+retry.onclick=()=>run();
+function setMode(m){
+  if (busy) return; mode=m;
+  document.getElementById('mCar').setAttribute('aria-pressed',m==='car');
+  document.getElementById('mWalk').setAttribute('aria-pressed',m==='walk');
+  setTicks(); order=null; redrawBase(); drawFront(); run();
+}
+document.getElementById('mCar').onclick=()=>setMode('car');
+document.getElementById('mWalk').onclick=()=>setMode('walk');
+function setOrigin(lon,lat,name){
+  if (busy) return;
+  const [x,y]=merc(lon,lat); origin={lon,lat,x,y};
+  document.getElementById('tCity').textContent=name;
+  try{ localStorage.setItem('kxo-origin', JSON.stringify({lon,lat,name})); }catch(e){}
+  run();
+}
+map.on('click', ev=>{
+  const {lat,lng}=ev.latlng;
+  if (!insideKosovo(lng,lat)) return;
+  let best=null,bd=Infinity;
+  for (const p of PLACES){ const d=Math.hypot(p.lon-lng,(p.lat-lat)*1.35); if (d<bd){bd=d;best=p;} }
+  const name=best&&bd<0.02?best.n:`${lat.toFixed(3)}, ${lng.toFixed(3)}`;
+  document.getElementById('origin').value=''; setOrigin(lng,lat,name);
+});
+const originIn=document.getElementById('origin');
+originIn.addEventListener('change',()=>{
+  const v=originIn.value.trim().toLowerCase(), p=PLACES.find(p=>p.n.toLowerCase()===v);
+  if (p){ setOrigin(p.lon,p.lat,p.n); originIn.blur(); }
+});
+document.getElementById('toggle').onclick=()=>{
+  const pnl=document.getElementById('panel'); pnl.classList.toggle('collapsed');
+  document.getElementById('toggle').textContent=pnl.classList.contains('collapsed')?'Cilësimet ▴':'Cilësimet ▾';
+};
+map.on('move zoom',()=>{ view(); redrawBase(); drawFront(); });
+map.on('resize',()=>{ resize(); redrawBase(); drawFront(); });
+function fillPlaceList(){
+  const dl=document.getElementById('placeList'); dl.innerHTML=''; const seen=new Set();
+  for (const p of PLACES){ if (seen.has(p.n)) continue; seen.add(p.n); const o=document.createElement('option'); o.value=p.n; dl.appendChild(o); }
+}
+
+(async function init(){
+  resize(); setTicks();
+  if (innerWidth<=760){ document.getElementById('panel').classList.add('collapsed'); document.getElementById('toggle').textContent='Cilësimet ▴'; }
+  try{ await loadPlaces(); fillPlaceList(); }catch(e){ console.warn('places', e); }
+  let o=null; try{ o=JSON.parse(localStorage.getItem('kxo-origin')); }catch(e){}
+  if (!o){ const p=PLACES.find(p=>/^Prishtin/i.test(p.n)); o=p?{lon:p.lon,lat:p.lat,name:p.n}:{lon:21.1655,lat:42.6629,name:'Prishtina'}; }
+  setOrigin(o.lon,o.lat,o.name);
+})();
+</script>
+</body>
+</html>
